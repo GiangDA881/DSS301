@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - DSS301</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+
+        .login-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🔐 Login</h1>
+            <p>DSS Sales System</p>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required placeholder="Enter your username">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="Enter your password">
+            </div>
+
+            <button type="submit" class="login-btn">Login</button>
+
+            <div id="loading" class="loading">
+                <p>⏳ Đang xử lý...</p>
+            </div>
+        </form>
+
+        <div class="login-link">
+            Don't have an account? <a href="/register.html">Register here</a>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const messageDiv = document.getElementById('message');
+        const loadingDiv = document.getElementById('loading');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Show loading
+            loadingDiv.classList.add('show');
+            messageDiv.classList.remove('show');
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const apiResponse = await response.json();
+
+                // Hide loading
+                loadingDiv.classList.remove('show');
+
+                if (apiResponse.success && apiResponse.data) {
+                    // Show success message
+                    messageDiv.textContent = `✅ ${apiResponse.message}! Welcome, ${apiResponse.data.username}`;
+                    messageDiv.className = 'message success show';
+
+                    // Save user info and JWT token to localStorage
+                    localStorage.setItem('userId', apiResponse.data.userId);
+                    localStorage.setItem('username', apiResponse.data.username);
+                    localStorage.setItem('token', apiResponse.data.token);
+                    localStorage.setItem('tokenType', apiResponse.data.tokenType);
+                    localStorage.setItem('role', apiResponse.data.role);
+
+                    console.log('🔐 JWT Token saved:', apiResponse.data.token);
+
+                    // Redirect based on role after 1.5 seconds
+                    setTimeout(() => {
+                        const role = apiResponse.data.role;
+                        if (role === 'Admin') {
+                            window.location.href = '/dashboard-admin.html';
+                        } else if (role === 'Business Analyst') {
+                            window.location.href = '/dashboard-analyst.html';
+                        } else if (role === 'Sales Manager') {
+                            window.location.href = '/dashboard-sales.html';
+                        } else if (role === 'Marketing Manager') {
+                            window.location.href = '/dashboard-marketing.html';
+                        } else if (role === 'Staff') {
+                            window.location.href = '/dashboard-staff.html';
+                        } else {
+                            window.location.href = '/dashboard.html';
+                        }
+                    }, 1500);
+                } else {
+                    // Show error message
+                    messageDiv.textContent = `❌ ${apiResponse.message}`;
+                    messageDiv.className = 'message error show';
+                }
+            } catch (error) {
+                loadingDiv.classList.remove('show');
+                messageDiv.textContent = `❌ Connection error: ${error.message}`;
+                messageDiv.className = 'message error show';
+            }
+        });
+    </script>
+</body>
+</html>

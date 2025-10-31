@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - DSS301</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .role-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: white;
+            color: #dc3545;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #dc3545;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .menu-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .menu-list li {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .menu-list li:hover {
+            background: #dc3545;
+            color: white;
+            transform: translateX(10px);
+        }
+
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div>
+                <h2>👑 Admin Dashboard</h2>
+            </div>
+            <div class="user-info">
+                <span class="role-badge">ADMIN</span>
+                <span id="userDisplay">Loading...</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2>📊 System Overview</h2>
+                <div class="stat-value">1,234</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+
+            <div class="card">
+                <h2>💰 Total Revenue</h2>
+                <div class="stat-value">$125,430</div>
+                <div class="stat-label">This Month</div>
+            </div>
+
+            <div class="card">
+                <h2>📦 Orders</h2>
+                <div class="stat-value">856</div>
+                <div class="stat-label">Pending: 45</div>
+            </div>
+
+            <div class="card">
+                <h2>👥 Active Users</h2>
+                <div class="stat-value">892</div>
+                <div class="stat-label">Online Now: 124</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2>⚙️ System Management</h2>
+                <ul class="menu-list">
+                    <li>👤 User Management</li>
+                    <li>🔐 Role & Permissions</li>
+                    <li>🗄️ Database Backup</li>
+                    <li>📊 System Logs</li>
+                    <li>⚡ Performance Monitor</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>📋 Recent Activities</h2>
+                <div class="alert">🔔 New user registered: john_doe</div>
+                <div class="alert">⚠️ Server CPU usage: 85%</div>
+                <div class="alert">✅ Database backup completed</div>
+                <div class="alert">🔄 System update available</div>
+            </div>
+
+            <div class="card">
+                <h2>🛠️ Admin Tools</h2>
+                <ul class="menu-list">
+                    <li>📧 Send Announcements</li>
+                    <li>🗑️ Manage Data</li>
+                    <li>📈 Reports Generator</li>
+                    <li>🔧 Settings</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication and role
+        const username = localStorage.getItem('username');
+        const role = localStorage.getItem('role');
+        const token = localStorage.getItem('token');
+
+        if (!token || !username) {
+            window.location.href = '/login.html';
+        } else if (role !== 'Admin') {
+            alert('Access Denied: Admin only!');
+            window.location.href = '/login.html';
+        } else {
+            document.getElementById('userDisplay').textContent = `👤 ${username}`;
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>
+

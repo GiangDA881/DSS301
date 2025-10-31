@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Test - DSS301</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .token-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+        }
+
+        .response {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .success {
+            color: #28a745;
+        }
+
+        .error {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center; margin-bottom: 30px;">🔐 JWT Authentication Test</h1>
+
+        <div class="card">
+            <h2>📊 Current Token Info</h2>
+            <div>
+                <strong>Username:</strong> <span id="usernameDisplay">Not logged in</span><br>
+                <strong>User ID:</strong> <span id="userIdDisplay">-</span><br>
+                <strong>Token Type:</strong> <span id="tokenTypeDisplay">-</span>
+            </div>
+            <div class="token-display" id="tokenDisplay">No token available</div>
+            <button class="btn" onclick="clearToken()">🗑️ Clear Token</button>
+        </div>
+
+        <div class="card">
+            <h2>🧪 Test API Endpoints</h2>
+
+            <h3>1. Login (Get Token)</h3>
+            <button class="btn" onclick="testLogin()">🔐 Test Login</button>
+            <div class="response" id="loginResponse"></div>
+
+            <h3 style="margin-top: 20px;">2. Protected Endpoint (Without Token)</h3>
+            <button class="btn" onclick="testProtectedWithoutToken()">❌ Test Without Token</button>
+            <div class="response" id="noTokenResponse"></div>
+
+            <h3 style="margin-top: 20px;">3. Protected Endpoint (With Token)</h3>
+            <button class="btn" onclick="testProtectedWithToken()">✅ Test With Token</button>
+            <div class="response" id="withTokenResponse"></div>
+
+            <h3 style="margin-top: 20px;">4. Check Auth</h3>
+            <button class="btn" onclick="testCheckAuth()">🔍 Check Authentication</button>
+            <div class="response" id="checkAuthResponse"></div>
+        </div>
+
+        <div class="card">
+            <h2>📝 How to Use JWT Token</h2>
+            <p>Khi gọi API cần authentication, thêm header:</p>
+            <div class="token-display">
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+            </div>
+            <p style="margin-top: 10px;"><strong>Example with fetch:</strong></p>
+            <div class="token-display">
+fetch('/api/protected-endpoint', {
+    method: 'GET',
+    headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+    }
+})
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Display current token on page load
+        function displayTokenInfo() {
+            const username = localStorage.getItem('username');
+            const userId = localStorage.getItem('userId');
+            const token = localStorage.getItem('token');
+            const tokenType = localStorage.getItem('tokenType');
+
+            document.getElementById('usernameDisplay').textContent = username || 'Not logged in';
+            document.getElementById('userIdDisplay').textContent = userId || '-';
+            document.getElementById('tokenTypeDisplay').textContent = tokenType || '-';
+            document.getElementById('tokenDisplay').textContent = token || 'No token available';
+        }
+
+        // Test login and get token
+        async function testLogin() {
+            const response = document.getElementById('loginResponse');
+            response.textContent = 'Loading...';
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: '123456'
+                    })
+                });
+
+                const data = await res.json();
+                response.textContent = JSON.stringify(data, null, 2);
+
+                if (data.success && data.data.token) {
+                    localStorage.setItem('token', data.data.token);
+                    localStorage.setItem('username', data.data.username);
+                    localStorage.setItem('userId', data.data.userId);
+                    localStorage.setItem('tokenType', data.data.tokenType);
+                    displayTokenInfo();
+                    response.className = 'response success';
+                } else {
+                    response.className = 'response error';
+                }
+            } catch (error) {
+                response.textContent = 'Error: ' + error.message;
+                response.className = 'response error';
+            }
+        }
+
+        // Test protected endpoint without token
+        async function testProtectedWithoutToken() {
+            const response = document.getElementById('noTokenResponse');
+            response.textContent = 'Loading...';
+
+            try {
+                const res = await fetch('/api/auth/check', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await res.json();
+                response.textContent = JSON.stringify(data, null, 2);
+                response.className = 'response';
+            } catch (error) {
+                response.textContent = 'Error: ' + error.message;
+                response.className = 'response error';
+            }
+        }
+
+        // Test protected endpoint with token
+        async function testProtectedWithToken() {
+            const response = document.getElementById('withTokenResponse');
+            response.textContent = 'Loading...';
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                response.textContent = 'No token found! Please login first.';
+                response.className = 'response error';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/check', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                const data = await res.json();
+                response.textContent = JSON.stringify(data, null, 2);
+                response.className = 'response success';
+            } catch (error) {
+                response.textContent = 'Error: ' + error.message;
+                response.className = 'response error';
+            }
+        }
+
+        // Check authentication status
+        async function testCheckAuth() {
+            const response = document.getElementById('checkAuthResponse');
+            response.textContent = 'Loading...';
+
+            const token = localStorage.getItem('token');
+
+            try {
+                const res = await fetch('/api/auth/check', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? 'Bearer ' + token : ''
+                    }
+                });
+
+                const data = await res.json();
+                response.textContent = JSON.stringify(data, null, 2);
+                response.className = data.success ? 'response success' : 'response error';
+            } catch (error) {
+                response.textContent = 'Error: ' + error.message;
+                response.className = 'response error';
+            }
+        }
+
+        // Clear token
+        function clearToken() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('tokenType');
+            displayTokenInfo();
+            alert('Token cleared!');
+        }
+
+        // Initialize
+        displayTokenInfo();
+    </script>
+</body>
+</html>
+

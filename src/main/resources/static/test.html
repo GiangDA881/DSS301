@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo CNH - HĐH</title>
+    <style>
+        /* CSS Reset & Font */
+        :root {
+            --primary-color: #0d6efd;
+            --border-color: #dee2e6;
+            --bg-light: #f8f9fa;
+            --text-color: #212529;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-light);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        /* Container chính */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 24px;
+        }
+
+        /* Cấu trúc Tab */
+        .tab-nav {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .tab-link {
+            font-size: 18px;
+            font-weight: 600;
+            padding: 12px 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px; /* Dính vào border-bottom của .tab-nav */
+            color: #6c757d;
+        }
+
+        .tab-link.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none; /* Ẩn tất cả tab-content ban đầu */
+            padding: 24px 0 0 0;
+        }
+
+        .tab-content.active {
+            display: block; /* Hiển thị tab-content đang active */
+        }
+
+        h2 {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+
+        /* 1. Giao diện Dashboard */
+        .dashboard-slider {
+            margin: 20px 0;
+        }
+
+        .dashboard-slider label {
+            font-size: 16px;
+            font-weight: 600;
+            margin-right: 15px;
+        }
+
+        .dashboard-slider input[type="range"] {
+            width: 70%;
+        }
+
+        .dashboard-slider span {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+            min-width: 50px;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .chart-card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .chart-card h3 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .chart-placeholder {
+            height: 250px;
+            background-color: var(--bg-light);
+            border: 2px dashed var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #6c757d;
+            border-radius: 4px;
+        }
+
+        /* 2. Giao diện Sandbox */
+        .sandbox-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+
+        .sandbox-inputs {
+            flex: 1;
+            min-width: 300px;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .sandbox-outputs {
+            flex: 2;
+            min-width: 300px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .slider-group {
+            margin-bottom: 24px;
+        }
+
+        .slider-group label {
+            display: block;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .slider-group .value-display {
+            float: right;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .output-gauge {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+        }
+
+        .output-gauge h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            color: #495057;
+        }
+
+        .gauge-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        /* Icon (giả lập) */
+        .gauge-value::before {
+            content: '📈'; /* Ví dụ: thay đổi icon cho mỗi gauge */
+            margin-right: 10px;
+            font-size: 28px;
+        }
+        .output-gauge[data-metric="pollution"] .gauge-value { color: #dc3545; }
+        .output-gauge[data-metric="pollution"] .gauge-value::before { content: '🏭'; }
+
+        .output-gauge[data-metric="autonomy"] .gauge-value { color: #20c997; }
+        .output-gauge[data-metric="autonomy"] .gauge-value::before { content: '💡'; }
+
+        .output-gauge[data-metric="jobs"] .gauge-value { color: #ffc107; }
+        .output-gauge[data-metric="jobs"] .gauge-value::before { content: '👥'; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Thuyết trình: CNH, HĐH & Hội nhập Kinh tế</h1>
+
+    <div class="tab-nav">
+        <button class="tab-link active" onclick="openTab(event, 'dashboard')">1. Dashboard Dữ liệu</button>
+        <button class="tab-link" onclick="openTab(event, 'sandbox')">2. Sandbox Chính sách</button>
+    </div>
+
+    <div id="dashboard" class="tab-content active">
+        <h2>Dashboard: Trực quan hóa Dữ liệu Kinh tế Việt Nam</h2>
+
+        <div class="dashboard-slider">
+            <label for="year-slider">Chọn Năm:</label>
+            <input type="range" id="year-slider" min="1990" max="2024" value="2024"
+                   oninput="document.getElementById('year-value').innerText = this.value">
+            <span id="year-value">2024</span>
+        </div>
+
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h3>Cơ cấu GDP (Nông - Công - Dịch vụ)</h3>
+                <div class="chart-placeholder">[Biểu đồ tròn (Pie Chart) sẽ ở đây]</div>
+            </div>
+            <div class="chart-card">
+                <h3>Vốn đầu tư FDI (Tỷ USD)</h3>
+                <div class="chart-placeholder">[Biểu đồ cột (Bar Chart) sẽ ở đây]</div>
+            </div>
+            <div class="chart-card">
+                <h3>Tỷ lệ người dùng Internet (%)</h3>
+                <div class="chart-placeholder">[Biểu đồ đường (Line Chart) sẽ ở đây]</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sandbox" class="tab-content">
+        <h2>Sandbox: Mô phỏng "Pha chế" Chính sách</h2>
+
+        <div class="sandbox-container">
+            <div class="sandbox-inputs">
+                <h3>Bảng điều khiển</h3>
+
+                <div class="slider-group">
+                    <label for="cnh-slider">
+                        Ưu tiên CÔNG NGHIỆP HÓA
+                        <span class="value-display" id="cnh-value">50</span>
+                    </label>
+                    <input type="range" id="cnh-slider" min="0" max="100" value="50"
+                           oninput="updateSandbox()">
+                </div>
+
+                <div class="slider-group">
+                    <label for="hdh-slider">
+                        Ưu tiên HIỆN ĐẠI HÓA
+                        <span class="value-display" id="hdh-value">50</span>
+                    </label>
+                    <input type="range" id="hdh-slider" min="0" max="100" value="50"
+                           oninput="updateSandbox()">
+                </div>
+
+                <div class="slider-group">
+                    <label for="hn-slider">
+                        Mức độ HỘI NHẬP
+                        <span class="value-display" id="hn-value">50</span>
+                    </label>
+                    <input type="range" id="hn-slider" min="0" max="100" value="50"
+                           oninput="updateSandbox()">
+                </div>
+            </div>
+
+            <div class="sandbox-outputs">
+                <div class="output-gauge" data-metric="gdp">
+                    <h3>Tăng trưởng GDP</h3>
+                    <div class="gauge-value" id="gdp-output">...</div>
+                </div>
+                <div class="output-gauge" data-metric="pollution">
+                    <h3>Mức độ Ô nhiễm</h3>
+                    <div class="gauge-value" id="pollution-output">...</div>
+                </div>
+                <div class="output-gauge" data-metric="autonomy">
+                    <h3>Sự tự chủ Công nghệ</h3>
+                    <div class="gauge-value" id="autonomy-output">...</div>
+                </div>
+                <div class="output-gauge" data-metric="jobs">
+                    <h3>Số lượng Việc làm</h3>
+                    <div class="gauge-value" id="jobs-output">...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // === JavaScript cho TAB ===
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+
+        // Ẩn tất cả nội dung tab
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+
+        // Bỏ class 'active' khỏi tất cả link tab
+        tablinks = document.getElementsByClassName("tab-link");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+
+        // Hiển thị tab hiện tại và thêm class 'active' cho nút
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
+
+    // === JavaScript cho SANDBOX (Logic mô phỏng ĐƠN GIẢN) ===
+    function updateSandbox() {
+        // 1. Lấy giá trị từ sliders
+        let cnh = parseInt(document.getElementById('cnh-slider').value);
+        let hdh = parseInt(document.getElementById('hdh-slider').value);
+        let hn = parseInt(document.getElementById('hn-slider').value);
+
+        // 2. Cập nhật giá trị hiển thị bên cạnh slider
+        document.getElementById('cnh-value').innerText = cnh;
+        document.getElementById('hdh-value').innerText = hdh;
+        document.getElementById('hn-value').innerText = hn;
+
+        // 3. Tính toán logic (Ông có thể thay đổi công thức này)
+        // Logic:
+        // - GDP: Cả 3 đều kéo, nhưng HĐH và Hội nhập kéo mạnh nhất.
+        // - Ô nhiễm: CNH kéo tăng, HĐH kéo giảm.
+        // - Tự chủ: Chỉ HĐH kéo tăng, Hội nhập (FDI) có thể giảm nhẹ.
+        // - Việc làm: CNH tạo nhiều việc làm (lắp ráp), HĐH ít hơn (tinh).
+
+        let gdp = (cnh * 0.5) + (hdh * 1.0) + (hn * 0.8);
+        let pollution = (cnh * 0.9) - (hdh * 0.4);
+        let autonomy = (hdh * 1.2) - (cnh * 0.1) - (hn * 0.1);
+        let jobs = (cnh * 1.0) + (hdh * 0.3) + (hn * 0.5);
+
+        // 4. Hiển thị kết quả (làm tròn số)
+        document.getElementById('gdp-output').innerText = Math.round(gdp);
+        document.getElementById('pollution-output').innerText = Math.max(0, Math.round(pollution)); // Không âm
+        document.getElementById('autonomy-output').innerText = Math.max(0, Math.round(autonomy)); // Không âm
+        document.getElementById('jobs-output').innerText = Math.round(jobs);
+    }
+
+    // Kích hoạt tab đầu tiên và chạy sandbox lần đầu
+    document.getElementsByClassName('tab-link')[0].click();
+    updateSandbox();
+</script>
+
+</body>
+</html>
