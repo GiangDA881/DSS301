@@ -3,6 +3,8 @@ package g2.g2_gp_project.controller;
 import g2.g2_gp_project.dto.ApiResponse;
 import g2.g2_gp_project.dto.LoginRequest;
 import g2.g2_gp_project.dto.LoginResponse;
+import g2.g2_gp_project.dto.RegisterRequest;
+import g2.g2_gp_project.dto.RegisterResponse;
 import g2.g2_gp_project.service.AuthtService;
 import g2.g2_gp_project.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,20 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Login failed: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(@RequestBody RegisterRequest request) {
+        try {
+            RegisterResponse resp = authService.register(request.getUsername(), request.getPassword(), request.getRole());
+            if (resp.isSuccess()) {
+                return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Registration successful", resp));
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(resp.getMessage(), resp));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("Registration failed: " + e.getMessage()));
         }
     }
 
