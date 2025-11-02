@@ -1,5 +1,13 @@
 package g2.g2_gp_project.service;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import g2.g2_gp_project.dto.CreateOrderItemRequest;
 import g2.g2_gp_project.dto.CreateOrderRequest;
 import g2.g2_gp_project.entity.Customer;
@@ -13,14 +21,6 @@ import g2.g2_gp_project.repository.OrderRepository;
 import g2.g2_gp_project.repository.OrderSequenceRepository;
 import g2.g2_gp_project.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -70,9 +70,18 @@ public class OrderService {
         order.setOrderId(nextOrderId());
         order.setCustomer(customer);
         if (req.getOrderDate() != null && !req.getOrderDate().isBlank()) {
-            order.setOrderDate(LocalDate.parse(req.getOrderDate()));
+            // Try to parse as LocalDateTime, fallback to LocalDate at midnight
+            try {
+                order.setOrderDate(java.time.LocalDateTime.parse(req.getOrderDate(), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            } catch (Exception e) {
+                try {
+                    order.setOrderDate(java.time.LocalDate.parse(req.getOrderDate(), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay());
+                } catch (Exception ex) {
+                    order.setOrderDate(java.time.LocalDateTime.now());
+                }
+            }
         } else {
-            order.setOrderDate(LocalDate.now());
+            order.setOrderDate(java.time.LocalDateTime.now());
         }
         order.setStatus(req.getStatus());
 

@@ -1,7 +1,6 @@
 package g2.g2_gp_project.mongo;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
@@ -26,7 +25,7 @@ public class MongoOrder {
     @Field("CustomerID")
     private String customerId;
     @Field("OrderDate")
-    private LocalDate orderDate;
+    private java.time.LocalDateTime orderDate;
     @Field("TotalAmount")
     private BigDecimal totalAmount;
     @Field("Status")

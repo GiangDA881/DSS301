@@ -2,7 +2,7 @@
 package g2.g2_gp_project.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,7 +17,7 @@ public class OrderSummaryResponse {
     private String orderId;
     private String customerIdRaw;
     private String customerName;
-    private LocalDate orderDate;
+    private LocalDateTime orderDate;
     private BigDecimal totalAmount;
     private String status;
 }

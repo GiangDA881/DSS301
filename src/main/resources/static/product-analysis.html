@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Analysis by Country</title>
+
+  <!-- CSS & Libraries -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin:0; padding:0; }
+    body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#f5f5f5; }
+    .navbar { background:linear-gradient(135deg,#28a745,#218838); color:#fff; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+    .navbar-content { max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; }
+    .logout-btn { background:#fff;color:#28a745;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600; }
+    .spinner { border:4px solid #f3f3f3; border-top:4px solid #3498db; border-radius:50%; width:40px; height:40px; margin:0 auto; animation:spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+    .container { max-width:1200px;margin:24px auto;padding:20px; }
+    .card { background:white; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.06); padding:20px; margin-bottom:20px; }
+    .search-bar { display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+    .btn-find { background:#218838; color:#fff; border:none; padding:8px 14px; border-radius:6px; }
+    .chart-container { display:flex; gap:20px; flex-wrap:wrap; }
+    .chart-wrapper { flex:1 1 45%; background:#fff; padding:16px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.04); }
+    @media (max-width:768px){ .chart-wrapper {flex-basis:100%;} }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="navbar-content">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <a href="dashboard-sales.html" class="logout-btn">← Quay lại</a>
+        <h2 style="margin:0">📊 Product Analysis</h2>
+      </div>
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div id="userDisplay">Loading...</div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <h4 class="card-title mb-4">Bộ lọc phân tích</h4>
+      <div class="search-bar">
+        <div>
+          <label for="fromDate" class="form-label">Từ ngày</label>
+          <input type="text" id="fromDate" class="form-control" placeholder="dd/MM/yyyy" autocomplete="off">
+        </div>
+        <div>
+          <label for="toDate" class="form-label">Đến ngày</label>
+          <input type="text" id="toDate" class="form-control" placeholder="dd/MM/yyyy" autocomplete="off">
+        </div>
+        <div style="flex:1; min-width:220px;">
+          <label for="countries" class="form-label">Quốc gia</label>
+          <select id="countries" multiple class="form-control"></select>
+        </div>
+        <div style="max-width:120px;">
+          <label for="topN" class="form-label">Top N</label>
+          <input type="number" id="topN" class="form-control" value="10" min="1">
+        </div>
+        <div>
+          <button class="btn btn-find" onclick="analyzeProducts()">Phân tích</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Kết quả phân tích</h4>
+      <div id="resultsTable"></div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-wrapper">
+        <h5>Top sản phẩm theo số lượng</h5>
+        <canvas id="productChart"></canvas>
+      </div>
+      <div class="chart-wrapper">
+        <h5>Top sản phẩm theo doanh thu</h5>
+        <canvas id="revenueChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- AUTH ---
+    const username = localStorage.getItem('username');
+    const token = localStorage.getItem('token');
+    if(!token || !username) window.location.href = '/login.html';
+    else document.getElementById('userDisplay').textContent = `👤 ${username}`;
+
+    function logout(){
+      localStorage.clear();
+      window.location.href = '/login.html';
+    }
+
+    // --- UTILITIES ---
+    function parseDMYtoYMD(str){
+      const parts = str.split('/');
+      return parts.length===3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : '';
+    }
+    function formatNumber(v,dec=0){return Number(v||0).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
+    function formatMoney(v){return Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+    function getRankDisplay(r){return {1:'🥇',2:'🥈',3:'🥉'}[r]||r;}
+    function formatDateDMY(d){return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;}
+
+    // --- MAIN ANALYSIS ---
+    function analyzeProducts(){
+      console.log('Phân tích button clicked');
+      const fromDate=$('#fromDate').val();
+      const toDate=$('#toDate').val();
+      const countries=$('#countries').val()||[];
+      const topN=parseInt($('#topN').val()||10);
+      if(!fromDate||!toDate||isNaN(topN)||topN<1){
+        $('#resultsTable').html('<div class="alert alert-warning">Vui lòng nhập đầy đủ bộ lọc.</div>');
+        return;
+      }
+      const req={fromDate:parseDMYtoYMD(fromDate),toDate:parseDMYtoYMD(toDate),countries,topN,removeReturns:true};
+      const headers={'Content-Type':'application/json'};
+      if(token) headers['Authorization']='Bearer '+token;
+
+      $('#resultsTable').html('<div class="spinner"></div>');
+      fetch('/api/analysis/products',{method:'POST',headers,body:JSON.stringify(req)})
+        .then(r=>{
+          if(r.status===401||r.status===403){
+            $('#resultsTable').html('<div class="alert alert-danger">Hết phiên đăng nhập.</div>');
+            setTimeout(()=>window.location.href='/login.html',1200);
+            return [];
+          }
+          return r.json();
+        })
+        .then(data=>{
+          if(Array.isArray(data)&&data.length>0){
+            displayResults(data);
+            updateCharts(data);
+          }else{
+            $('#resultsTable').html('<div class="small">Không có dữ liệu phù hợp.</div>');
+            updateCharts([]);
+          }
+        })
+        .catch(e=>{
+          console.error(e);
+          $('#resultsTable').html('<div class="alert alert-danger">Lỗi khi lấy dữ liệu.</div>');
+          updateCharts([]);
+        });
+    }
+
+    function displayResults(data){
+      let rows=data.map(item=>`<tr>
+        <td>${getRankDisplay(item.rank)}</td>
+        <td><code>${item.stockCode||''}</code></td>
+        <td>${item.description||''}</td>
+        <td>${item.country||''}</td>
+        <td class="text-end">${formatNumber(item.totalQuantity)}</td>
+        <td class="text-end">$${formatMoney(item.totalRevenue)}</td>
+        <td class="text-end">${formatNumber(item.marketSharePercent,2)}%</td>
+      </tr>`).join('');
+      $('#resultsTable').html(`
+        <div class="table-responsive">
+          <table class="table">
+            <thead><tr><th>Xếp hạng</th><th>Mã</th><th>Tên</th><th>Quốc gia</th><th class="text-end">Số lượng</th><th class="text-end">Doanh thu</th><th class="text-end">Tỷ trọng</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`);
+    }
+
+    let productChart=null, revenueChart=null;
+    function updateCharts(data){
+      const labels=data.map(d=>(d.description||'').substring(0,30));
+      const qty=data.map(d=>d.totalQuantity||0);
+      const rev=data.map(d=>+d.totalRevenue||0);
+      const pc=document.getElementById('productChart').getContext('2d');
+      const rc=document.getElementById('revenueChart').getContext('2d');
+      if(productChart) productChart.destroy();
+      if(revenueChart) revenueChart.destroy();
+      productChart=new Chart(pc,{type:'bar',data:{labels,datasets:[{label:'Số lượng',data:qty,backgroundColor:'rgba(33,136,56,0.6)'}]},options:{responsive:true}});
+      revenueChart=new Chart(rc,{type:'bar',data:{labels,datasets:[{label:'Doanh thu',data:rev,backgroundColor:'rgba(54,162,235,0.6)'}]},options:{responsive:true}});
+    }
+
+    // --- INIT ---
+    $(function(){
+      // Datepicker
+      $("#fromDate,#toDate").datepicker({dateFormat:"dd/mm/yy",changeMonth:true,changeYear:true});
+
+      // Gợi ý ngày mặc định
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      $("#fromDate").val(formatDateDMY(firstDay));
+      $("#toDate").val(formatDateDMY(now));
+
+      // Load danh sách quốc gia (không cần BE)
+      const sel = $('#countries');
+      sel.prop('disabled', true).append(new Option('Đang tải...', '', false, false));
+
+      // Store country mapping for later use
+      window.countryMapping = {};
+      
+      fetch('https://restcountries.com/v3.1/all?fields=name,cca2,translations')
+          .then(r => {
+              if (!r.ok) throw new Error('restcountries API failed');
+              return r.json();
+          })
+          .then(list => {
+              sel.empty();
+              const mapped = list.map(c => {
+                  const code = c.cca2;
+                  const displayName = c.translations?.vie?.common || c.name?.common || c.cca2;
+                  const countryName = c.name?.common || c.cca2; // Use common name (English) for database matching
+                  
+                  // Store mapping: code -> countryName for reference
+                  window.countryMapping[code] = countryName;
+                  
+                  return {
+                      code: code,
+                      displayName: displayName,
+                      countryName: countryName
+                  };
+              }).sort((a,b) => a.displayName.localeCompare(b.displayName, 'vi'));
+              
+              // Use countryName (common) as value instead of code
+              mapped.forEach(c => {
+                  const option = new Option(`${c.displayName} (${c.code})`, c.countryName, false, false);
+                  option.setAttribute('data-code', c.code); // Store code for display reference
+                  sel.append(option);
+              });
+              
+              sel.prop('disabled', false).select2({ placeholder:'Chọn quốc gia...', allowClear:true, width:'resolve' });
+          })
+          .catch(e => {
+              console.error('Lỗi tải quốc gia:', e);
+              sel.html('<option>Không thể tải danh sách quốc gia</option>');
+          });
+    });
+  </script>
+</body>
+</html>

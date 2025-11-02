@@ -69,31 +69,43 @@ public class DataMigrationService {
                 String invoiceNo = entry.getKey();
                 List<g2.g2_gp_project.mongo.MongoTransaction> items = entry.getValue();
                 if (items.isEmpty()) continue;
-                if (orderRepository.findById(invoiceNo).isPresent()) {
-                    log.debug("Order {} already exists, skipping", invoiceNo);
-                    continue;
-                }
                 g2.g2_gp_project.mongo.MongoTransaction firstItem = items.get(0);
                 Customer customer = createOrUpdateCustomerTx(firstItem);
-                Order order = new Order();
-                order.setOrderId(invoiceNo);
+                Order order = orderRepository.findById(invoiceNo).orElse(null);
+                boolean isNewOrder = (order == null);
+                if (isNewOrder) {
+                    order = new Order();
+                    order.setOrderId(invoiceNo);
+                }
                 order.setCustomer(customer);
                 order.setStatus("Completed");
                 order.setCustomerIdRaw(firstItem.getCustomerId());
                 order.setCountry(firstItem.getCountry());
-                LocalDateTime orderDateTime;
-                try {
-                    String dateStr = firstItem.getInvoiceDate();
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-                    orderDateTime = LocalDateTime.parse(dateStr, formatter);
-                } catch (Exception e) {
-                    log.warn("Failed to parse date for invoice {}: {}", invoiceNo, firstItem.getInvoiceDate());
-                    orderDateTime = LocalDateTime.now();
+                String dateStr = firstItem.getInvoiceDate();
+                if (dateStr != null) {
+                    try {
+                        LocalDateTime orderDateTime = LocalDateTime.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                        order.setOrderDate(orderDateTime);
+                        order.setCreatedAt(orderDateTime);
+                    } catch (Exception e) {
+                        log.error("Failed to parse InvoiceDate '{}' for invoice {}: {}", dateStr, invoiceNo, e.getMessage());
+                        continue; // skip this order if date is invalid
+                    }
+                } else {
+                    log.error("InvoiceDate is null for invoice {}", invoiceNo);
+                    continue; // skip this order if date is missing
                 }
-                order.setOrderDate(orderDateTime.toLocalDate());
-                order.setCreatedAt(orderDateTime);
                 BigDecimal subtotal = BigDecimal.ZERO;
                 List<OrderItem> orderItems = new ArrayList<>();
+                // Remove all existing items for this order (to fully sync)
+                if (!isNewOrder) {
+                    List<OrderItem> existingItems = orderItemRepository.findAll();
+                    for (OrderItem oi : existingItems) {
+                        if (oi.getOrder().getOrderId().equals(order.getOrderId())) {
+                            orderItemRepository.delete(oi);
+                        }
+                    }
+                }
                 for (g2.g2_gp_project.mongo.MongoTransaction item : items) {
                     Product product = createOrUpdateProductTx(item);
                     OrderItem orderItem = new OrderItem();
@@ -120,7 +132,7 @@ public class DataMigrationService {
                     throw new RuntimeException("Order " + order.getOrderId() + " was not saved successfully");
                 }
                 savedOrders++;
-                log.info("Created order {} with {} items, total: {}", order.getOrderId(), orderItems.size(), order.getTotalAmount());
+                log.info((isNewOrder ? "Created" : "Updated") + " order {} with {} items, total: {}", order.getOrderId(), orderItems.size(), order.getTotalAmount());
             }
             log.info("Data migration completed: Found {} transactions, Processed {} orders, Successfully saved {} orders", totalTx, processedOrders, savedOrders);
         } catch (Exception e) {

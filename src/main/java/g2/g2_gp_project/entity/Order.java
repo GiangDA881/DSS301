@@ -1,7 +1,6 @@
 package g2.g2_gp_project.entity;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -43,7 +42,7 @@ public class Order {
     private String stockCode; // StockCode from MongoDB
 
     @Column(name = "order_date", nullable = false)
-    private LocalDate orderDate;
+    private LocalDateTime orderDate;
 
     @Column(name = "quantity")
     private Integer quantity;
@@ -80,6 +79,7 @@ public class Order {
         LocalDateTime now = LocalDateTime.now();
         if (createdAt == null) createdAt = now;
         if (updatedAt == null) updatedAt = now;
+        if (orderDate == null) orderDate = now;
     }
 
     @PreUpdate

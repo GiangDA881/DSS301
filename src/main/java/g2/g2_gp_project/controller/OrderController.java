@@ -75,7 +75,7 @@ public class OrderController {
             try {
                 LocalDate d = LocalDate.parse(orderDate.trim());
                 list = list.stream()
-                        .filter(o -> o.getOrderDate() != null && o.getOrderDate().isEqual(d))
+                        .filter(o -> o.getOrderDate() != null && o.getOrderDate().toLocalDate().isEqual(d))
                         .collect(Collectors.toList());
             } catch (DateTimeParseException e) {
                 // ignore invalid date format -> no date filtering
@@ -117,7 +117,7 @@ public class OrderController {
                 try {
                     LocalDate d = LocalDate.parse(orderDate.trim());
                     list = list.stream()
-                            .filter(o -> o.getOrderDate() != null && o.getOrderDate().isEqual(d))
+                            .filter(o -> o.getOrderDate() != null && o.getOrderDate().toLocalDate().isEqual(d))
                             .collect(Collectors.toList());
                 } catch (DateTimeParseException e) {
                     // ignore invalid date format -> no date filtering
@@ -164,14 +164,14 @@ public class OrderController {
             );
         }).collect(Collectors.toList());
 
-        OrderDetailResponse detail = new OrderDetailResponse(
-                o.getOrderId(),
-                o.getCustomer() != null ? o.getCustomer().getCustomerName() : null,
-                o.getOrderDate(),
-                o.getTotalAmount(),
-                o.getStatus(),
-                itemResponses
-        );
+    OrderDetailResponse detail = new OrderDetailResponse(
+        o.getOrderId(),
+        o.getCustomer() != null ? o.getCustomer().getCustomerName() : null,
+        o.getOrderDate(),
+        o.getTotalAmount(),
+        o.getStatus(),
+        itemResponses
+    );
 
         return ResponseEntity.ok(detail);
     }
