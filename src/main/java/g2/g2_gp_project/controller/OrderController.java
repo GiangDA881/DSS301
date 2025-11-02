@@ -85,6 +85,52 @@ public class OrderController {
         return list;
     }
 
+        // Paginated order list endpoint
+        @GetMapping("/paged")
+        public Map<String, Object> pagedList(
+                @RequestParam(defaultValue = "0") int page,
+                @RequestParam(defaultValue = "50") int limit,
+                @RequestParam(required = false) String q,
+                @RequestParam(required = false) String status,
+                @RequestParam(required = false) String orderDate
+        ) {
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, limit);
+            org.springframework.data.domain.Page<OrderSummaryResponse> paged = orderRepository.findAllSummariesPaged(pageable);
+            List<OrderSummaryResponse> list = paged.getContent();
+            // filter q
+            if (q != null && !q.trim().isEmpty()) {
+                String qq = q.trim().toLowerCase();
+                list = list.stream()
+                        .filter(o -> (o.getOrderId() != null && o.getOrderId().toLowerCase().contains(qq))
+                                || (o.getCustomerName() != null && o.getCustomerName().toLowerCase().contains(qq)))
+                        .collect(Collectors.toList());
+            }
+            // filter status
+            if (status != null && !status.trim().isEmpty() && !"All".equalsIgnoreCase(status.trim())) {
+                String st = status.trim().toLowerCase();
+                list = list.stream()
+                        .filter(o -> o.getStatus() != null && o.getStatus().toLowerCase().equals(st))
+                        .collect(Collectors.toList());
+            }
+            // filter orderDate (exact match)
+            if (orderDate != null && !orderDate.trim().isEmpty()) {
+                try {
+                    LocalDate d = LocalDate.parse(orderDate.trim());
+                    list = list.stream()
+                            .filter(o -> o.getOrderDate() != null && o.getOrderDate().isEqual(d))
+                            .collect(Collectors.toList());
+                } catch (DateTimeParseException e) {
+                    // ignore invalid date format -> no date filtering
+                }
+            }
+            Map<String, Object> result = new java.util.HashMap<>();
+            result.put("data", list);
+            result.put("total", paged.getTotalElements());
+            result.put("page", page);
+            result.put("limit", limit);
+            return result;
+        }
+
     // Debug endpoint: quick sanity check for orders in Postgres
     @GetMapping("/debug")
     public ResponseEntity<?> debug() {

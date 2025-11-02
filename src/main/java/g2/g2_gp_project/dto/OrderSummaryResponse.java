@@ -1,13 +1,13 @@
 // java
 package g2.g2_gp_project.dto;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -15,6 +15,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class OrderSummaryResponse {
     private String orderId;
+    private String customerIdRaw;
     private String customerName;
     private LocalDate orderDate;
     private BigDecimal totalAmount;

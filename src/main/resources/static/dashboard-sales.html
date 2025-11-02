@@ -11,6 +11,11 @@
         .navbar { background: linear-gradient(135deg,#28a745,#218838); color:#fff; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
         .navbar-content { max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; }
         .logout-btn { background:#fff;color:#28a745;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600; }
+        .modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.4); z-index:50; }
+        .modal.show { display:flex; }
+        .modal-content { width:90%; max-width:800px; background:#fff; border-radius:8px; padding:20px; box-shadow:0 8px 30px rgba(0,0,0,0.2); max-height:80vh; overflow:auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .spinner { border:4px solid #f3f3f3; border-top:4px solid #3498db; border-radius:50%; width:40px; height:40px; margin:0 auto; animation:spin 1s linear infinite; }
         .container { max-width:1200px;margin:24px auto;padding:20px; }
         .search-bar { display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
         .search-bar input[type="text"], .search-bar select, .search-bar input[type="date"] { padding:8px 10px; border-radius:6px; border:1px solid #ddd; }
@@ -28,6 +33,8 @@
         .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
         .close-btn { background:#e9ecef; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; }
         .small { font-size:0.9rem; color:#666; }
+        .modal-content { max-height:85vh; }
+        .modal-content > div:nth-child(2) { max-height:calc(85vh - 100px); overflow-y:auto; }
     </style>
 </head>
 <body>
@@ -57,7 +64,47 @@
         <button id="findBtn" class="btn btn-find" onclick="findOrders()">Find</button>
         <button id="resetBtn" class="btn btn-reset" onclick="resetSearch()">Reset</button>
         <button id="addOrderBtn" class="btn btn-find" style="background:#0069d9;" onclick="openAddModal()">Thêm mới</button>
+        <button id="syncBtn" class="btn btn-find" style="background:#6f42c1;" onclick="syncMongoData()">Đồng bộ MongoDB</button>
+        <button id="viewMongoBtn" class="btn btn-find" style="background:#fd7e14;" onclick="viewMongoData()">Xem dữ liệu MongoDB</button>
     </div>
+
+    <!-- MongoDB Data Modal -->
+    <div id="mongoModal" class="modal">
+        <div class="modal-content" style="width:95%; max-width:1200px;">
+            <div class="modal-header">
+                <h3>Dữ liệu MongoDB</h3>
+                <button onclick="closeMongoModal()" class="close-btn">&times;</button>
+            </div>
+            <div style="margin:15px 0; overflow:auto;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr id="mongoTableHead"></tr>
+                    </thead>
+                    <tbody id="mongoTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sync Progress Modal -->
+    <div id="syncModal" class="modal">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h3>Đồng bộ dữ liệu</h3>
+            </div>
+            <div id="syncStatus" style="padding:20px;text-align:center;">
+                <div style="margin-bottom:15px;">Đang đồng bộ dữ liệu từ MongoDB...</div>
+                <div class="spinner" style="border:4px solid #f3f3f3;border-top:4px solid #3498db;border-radius:50%;width:40px;height:40px;margin:0 auto;animation:spin 1s linear infinite;"></div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    </style>
 
     <table id="ordersTable" aria-live="polite">
         <thead>
@@ -120,12 +167,143 @@
     </div>
 </div>
 
-<script>
-    const username = localStorage.getItem('username');
-    const role = localStorage.getItem('role');
-    const token = localStorage.getItem('token');
+    <script>
+        const username = localStorage.getItem('username');
+        const role = localStorage.getItem('role');
+        const token = localStorage.getItem('token');
 
-    if (!token || !username) {
+        let mongoPage = 0;
+        let mongoLimit = 50;
+        let mongoTotal = 0;
+        let mongoLoaded = [];
+        let mongoKeys = [];
+        let mongoLoading = false;
+
+        async function viewMongoData() {
+            mongoPage = 0;
+            mongoLoaded = [];
+            mongoKeys = [];
+            mongoLoading = false;
+            const mongoModal = document.getElementById('mongoModal');
+            const tableHead = document.getElementById('mongoTableHead');
+            const tableBody = document.getElementById('mongoTableBody');
+            mongoModal.style.display = 'block';
+            tableHead.innerHTML = '';
+            tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:20px;">Đang tải dữ liệu...</td></tr>';
+            await loadMongoPage(0, true);
+        }
+
+        async function loadMongoPage(page, initial = false) {
+            if (mongoLoading) return;
+            mongoLoading = true;
+            try {
+                const response = await fetch(`/api/mongo/transactions?page=${page}&limit=${mongoLimit}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!response.ok) throw new Error('Failed to fetch MongoDB data');
+                const result = await response.json();
+                const data = result.data || [];
+                mongoTotal = result.total || 0;
+                if (initial) {
+                    // Get all unique keys from first page
+                    const allKeys = new Set();
+                    data.forEach(doc => Object.keys(doc).forEach(k => allKeys.add(k)));
+                    mongoKeys = Array.from(allKeys);
+                    const tableHead = document.getElementById('mongoTableHead');
+                    tableHead.innerHTML = mongoKeys.map(k => `<th>${k}</th>`).join('');
+                }
+                mongoLoaded = mongoLoaded.concat(data);
+                renderMongoTable();
+                // If there are more pages, auto-load next page in background
+                if ((page + 1) * mongoLimit < mongoTotal) {
+                    setTimeout(() => loadMongoPage(page + 1, false), 200); // slight delay for UI
+                }
+            } catch (error) {
+                const tableBody = document.getElementById('mongoTableBody');
+                tableBody.innerHTML = `<tr><td colspan='10' style='color:red;'>Lỗi: ${escapeHtml(error.message)}</td></tr>`;
+            } finally {
+                mongoLoading = false;
+            }
+        }
+
+        function renderMongoTable() {
+            const tableBody = document.getElementById('mongoTableBody');
+            if (mongoLoaded.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="10">Không có dữ liệu</td></tr>';
+                return;
+            }
+            // Only show current page
+            const start = mongoPage * mongoLimit;
+            const end = Math.min(start + mongoLimit, mongoLoaded.length);
+            const pageData = mongoLoaded.slice(start, end);
+            tableBody.innerHTML = pageData.map(doc => {
+                return `<tr>` + mongoKeys.map(k => `<td>${doc[k] !== undefined ? escapeHtml(doc[k]) : ''}</td>`).join('') + `</tr>`;
+            }).join('');
+            renderMongoPagination();
+        }
+
+        function renderMongoPagination() {
+            const tableBody = document.getElementById('mongoTableBody');
+            let pagin = document.getElementById('mongoPagination');
+            if (!pagin) {
+                pagin = document.createElement('tr');
+                pagin.id = 'mongoPagination';
+                tableBody.parentElement.appendChild(pagin);
+            }
+            const totalPages = Math.ceil(mongoTotal / mongoLimit);
+            pagin.innerHTML = `<td colspan='${mongoKeys.length}' style='text-align:center;'>
+                <button onclick='mongoPrevPage()' ${mongoPage === 0 ? 'disabled' : ''}>Trang trước</button>
+                Trang ${mongoPage + 1} / ${totalPages}
+                <button onclick='mongoNextPage()' ${((mongoPage + 1) * mongoLimit >= mongoLoaded.length) ? 'disabled' : ''}>Trang sau</button>
+                <span style='margin-left:20px;'>Đã tải ${mongoLoaded.length}/${mongoTotal} bản ghi</span>
+            </td>`;
+        }
+
+        window.mongoPrevPage = function() {
+            if (mongoPage > 0) {
+                mongoPage--;
+                renderMongoTable();
+            }
+        }
+        window.mongoNextPage = function() {
+            if ((mongoPage + 1) * mongoLimit < mongoLoaded.length) {
+                mongoPage++;
+                renderMongoTable();
+            }
+        }
+        function closeMongoModal() {
+            document.getElementById('mongoModal').style.display = 'none';
+        }
+
+        async function syncMongoData() {
+            if (!confirm('Bạn có chắc muốn đồng bộ dữ liệu từ MongoDB?')) {
+                return;
+            }
+
+            const syncModal = document.getElementById('syncModal');
+            syncModal.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/data/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Đồng bộ thất bại');
+                }
+
+                alert('Đồng bộ dữ liệu thành công!');
+                // Reload the orders list to show new data
+                findOrders();
+            } catch (error) {
+                alert('Lỗi khi đồng bộ: ' + error.message);
+            } finally {
+                syncModal.style.display = 'none';
+            }
+        }    if (!token || !username) {
         window.location.href = '/login.html';
     } else if (role !== 'Sales Manager') {
         alert('Access Denied: Sales Manager only!');
@@ -134,17 +312,27 @@
         document.getElementById('userDisplay').textContent = `👤 ${username}`;
     }
 
-    async function fetchOrders() {
-        // default: no filters
-        const res = await fetch('/api/orders', {
+
+    // Pagination state
+    let orderPage = 0;
+    let orderLimit = 50;
+    let orderTotal = 0;
+    let orderList = [];
+
+    async function fetchOrders(page = 0) {
+        orderPage = page;
+        const res = await fetch(`/api/orders/paged?page=${orderPage}&limit=${orderLimit}`, {
             headers: { 'Authorization': 'Bearer ' + token }
         });
         if (!res.ok) {
             console.error('Failed to fetch orders', res.status);
             return;
         }
-        const list = await res.json();
-        renderOrderList(list);
+        const result = await res.json();
+        orderList = result.data || [];
+        orderTotal = result.total || 0;
+        renderOrderList(orderList);
+        renderOrderPagination();
     }
 
     async function findOrders() {
@@ -177,48 +365,74 @@
     function renderOrderList(list) {
         const tbody = document.querySelector('#ordersTable tbody');
         tbody.innerHTML = '';
+        if (!list.length) {
+            tbody.innerHTML = '<tr><td colspan="6">Không có dữ liệu</td></tr>';
+            return;
+        }
         list.forEach(o => {
             const tr = document.createElement('tr');
-
             const tdId = document.createElement('td');
             const link = document.createElement('a');
             link.href = '#';
             link.textContent = o.orderId;
             link.addEventListener('click', (e) => { e.preventDefault(); openDetail(o.orderId); });
             tdId.appendChild(link);
-
             const tdCustomer = document.createElement('td');
             const custLink = document.createElement('a');
             custLink.href = '#';
-            custLink.textContent = o.customerName || '-';
+            // Show customerId if available, otherwise show customerName (if any), else '-'
+            custLink.textContent = o.customerIdRaw ? o.customerIdRaw : (o.customerName ? o.customerName : '-');
             custLink.addEventListener('click', (e) => { e.preventDefault(); openDetail(o.orderId); });
             tdCustomer.appendChild(custLink);
-
             const tdDate = document.createElement('td');
             tdDate.textContent = o.orderDate ? new Date(o.orderDate).toLocaleDateString() : '-';
-
             const tdTotal = document.createElement('td');
             tdTotal.textContent = o.totalAmount != null ? `$${Number(o.totalAmount).toFixed(2)}` : '-';
-
             const tdStatus = document.createElement('td');
             tdStatus.textContent = o.status || '-';
-
             const tdAction = document.createElement('td');
             const btn = document.createElement('button');
             btn.className = 'btn-view';
             btn.textContent = 'View';
             btn.addEventListener('click', () => openDetail(o.orderId));
             tdAction.appendChild(btn);
-
             tr.appendChild(tdId);
             tr.appendChild(tdCustomer);
             tr.appendChild(tdDate);
             tr.appendChild(tdTotal);
             tr.appendChild(tdStatus);
             tr.appendChild(tdAction);
-
             tbody.appendChild(tr);
         });
+    }
+
+    function renderOrderPagination() {
+        const tbody = document.querySelector('#ordersTable tbody');
+        let pagin = document.getElementById('orderPagination');
+        if (!pagin) {
+            pagin = document.createElement('tr');
+            pagin.id = 'orderPagination';
+            tbody.parentElement.appendChild(pagin);
+        }
+        const totalPages = Math.ceil(orderTotal / orderLimit);
+        pagin.innerHTML = `<td colspan='6' style='text-align:center;'>
+            <button onclick='orderPrevPage()' ${orderPage === 0 ? 'disabled' : ''}>Trang trước</button>
+            Trang ${orderPage + 1} / ${totalPages}
+            <button onclick='orderNextPage()' ${(orderPage + 1 >= totalPages) ? 'disabled' : ''}>Trang sau</button>
+            <span style='margin-left:20px;'>Tổng ${orderTotal} bản ghi</span>
+        </td>`;
+    }
+
+    window.orderPrevPage = function() {
+        if (orderPage > 0) {
+            fetchOrders(orderPage - 1);
+        }
+    }
+    window.orderNextPage = function() {
+        const totalPages = Math.ceil(orderTotal / orderLimit);
+        if (orderPage + 1 < totalPages) {
+            fetchOrders(orderPage + 1);
+        }
     }
 
     async function openDetail(orderId) {
@@ -279,7 +493,7 @@
     }
 
     // load on start
-    fetchOrders();
+    fetchOrders(0);
 
     // Add Order modal JS
     function openAddModal() {
