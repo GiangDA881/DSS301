@@ -32,4 +32,9 @@ public class ProductAnalysisController {
     public ResponseEntity<List<String>> getCountries() {
         return ResponseEntity.ok(productAnalysisService.getAllCountries());
     }
+
+    @PostMapping("/countries/compare")
+    public ResponseEntity<List<Map<String, Object>>> compareCountries(@RequestBody ProductAnalysisRequest request) {
+        return ResponseEntity.ok(productAnalysisService.compareCountriesByRevenue(request));
+    }
 }

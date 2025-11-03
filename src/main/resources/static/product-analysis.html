@@ -31,6 +31,9 @@
     .chart-container { display:flex; gap:20px; flex-wrap:wrap; }
     .chart-wrapper { flex:1 1 45%; background:#fff; padding:16px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.04); }
     @media (max-width:768px){ .chart-wrapper {flex-basis:100%;} }
+    .country-comparison-wrapper { flex:1 1 100%; background:#fff; padding:12px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.04); max-width:600px; margin:0 auto; }
+    .country-comparison-wrapper h5 { font-size:14px; margin-bottom:8px; font-weight:600; color:#333; }
+    #countryComparisonChart { max-height:300px !important; }
   </style>
 </head>
 
@@ -89,6 +92,13 @@
         <canvas id="revenueChart"></canvas>
       </div>
     </div>
+
+    <div id="countryComparisonContainer" style="display:none; margin-top:20px;">
+      <div class="country-comparison-wrapper">
+        <h5>🕐 So Sánh Theo Quốc Gia</h5>
+        <canvas id="countryComparisonChart"></canvas>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -118,7 +128,19 @@
       console.log('Phân tích button clicked');
       const fromDate=$('#fromDate').val();
       const toDate=$('#toDate').val();
-      const countries=$('#countries').val()||[];
+      // Get countries from Select2 - .val() on multiple select returns array
+      let countries = $('#countries').val();
+      console.log('Countries from .val():', countries, 'Type:', typeof countries);
+      
+      // Ensure it's an array
+      if(!countries){
+        countries = [];
+      } else if(!Array.isArray(countries)){
+        countries = [countries];
+      }
+      
+      console.log('Final countries array:', countries, 'Length:', countries.length);
+      
       const topN=parseInt($('#topN').val()||10);
       if(!fromDate||!toDate||isNaN(topN)||topN<1){
         $('#resultsTable').html('<div class="alert alert-warning">Vui lòng nhập đầy đủ bộ lọc.</div>');
@@ -139,6 +161,7 @@
           return r.json();
         })
         .then(data=>{
+          console.log('Selected countries:', countries, 'Count:', countries ? countries.length : 0);
           if(Array.isArray(data)&&data.length>0){
             displayResults(data);
             updateCharts(data);
@@ -146,11 +169,17 @@
             $('#resultsTable').html('<div class="small">Không có dữ liệu phù hợp.</div>');
             updateCharts([]);
           }
+          
+          // Always update country comparison chart (independent of product data and country selection)
+          console.log('Updating country comparison chart');
+          updateCountryComparisonChart(req);
         })
         .catch(e=>{
           console.error(e);
           $('#resultsTable').html('<div class="alert alert-danger">Lỗi khi lấy dữ liệu.</div>');
           updateCharts([]);
+          // Still try to load country comparison chart even if product data failed
+          updateCountryComparisonChart({fromDate:parseDMYtoYMD($('#fromDate').val()),toDate:parseDMYtoYMD($('#toDate').val()),countries:countries||[],topN:parseInt($('#topN').val()||10),removeReturns:true});
         });
     }
 
@@ -173,7 +202,8 @@
         </div>`);
     }
 
-    let productChart=null, revenueChart=null;
+    let productChart=null, revenueChart=null, countryComparisonChart=null;
+    
     function updateCharts(data){
       const labels=data.map(d=>(d.description||'').substring(0,30));
       const qty=data.map(d=>d.totalQuantity||0);
@@ -184,6 +214,135 @@
       if(revenueChart) revenueChart.destroy();
       productChart=new Chart(pc,{type:'bar',data:{labels,datasets:[{label:'Số lượng',data:qty,backgroundColor:'rgba(33,136,56,0.6)'}]},options:{responsive:true}});
       revenueChart=new Chart(rc,{type:'bar',data:{labels,datasets:[{label:'Doanh thu',data:rev,backgroundColor:'rgba(54,162,235,0.6)'}]},options:{responsive:true}});
+    }
+
+    function updateCountryComparisonChart(req){
+      console.log('updateCountryComparisonChart called with req:', req);
+      const headers={'Content-Type':'application/json'};
+      if(token) headers['Authorization']='Bearer '+token;
+      
+      fetch('/api/analysis/countries/compare',{method:'POST',headers,body:JSON.stringify(req)})
+        .then(r=>{
+          console.log('Country comparison API response status:', r.status);
+          if(r.status===401||r.status===403){
+            $('#countryComparisonContainer').hide();
+            return [];
+          }
+          if(!r.ok){
+            console.error('API error:', r.status, r.statusText);
+            throw new Error('API error: ' + r.status);
+          }
+          return r.json();
+        })
+        .then(data=>{
+          console.log('Country comparison data received:', data);
+          if(Array.isArray(data)&&data.length>0){
+            const countryLabels=data.map(d=>d.country||'');
+            const revenues=data.map(d=>Number(d.totalRevenue)||0);
+            
+            // Get country codes for color mapping
+            const countryCodes = {};
+            $('#countries option:selected').each(function(){
+              const code = $(this).attr('data-code');
+              const countryName = $(this).val();
+              countryCodes[countryName] = code;
+            });
+            
+            // Define colors based on country codes or use default colors
+            const colors = ['rgba(54,162,235,0.8)', 'rgba(75,192,192,0.8)', 'rgba(255,159,64,0.8)'];
+            const backgrounds = revenues.map((_, index) => {
+              const countryName = countryLabels[index];
+              // Try to get a consistent color based on country
+              if(countryName === 'United Kingdom' || countryCodes[countryName] === 'GB') return 'rgba(54,162,235,0.8)';
+              if(countryName === 'France' || countryCodes[countryName] === 'FR') return 'rgba(75,192,192,0.8)';
+              if(countryName === 'Germany' || countryCodes[countryName] === 'DE') return 'rgba(255,159,64,0.8)';
+              return colors[index % colors.length];
+            });
+            
+            const cc=document.getElementById('countryComparisonChart').getContext('2d');
+            if(countryComparisonChart) countryComparisonChart.destroy();
+            
+            countryComparisonChart=new Chart(cc,{
+              type:'bar',
+              data:{
+                labels:countryLabels,
+                datasets:[{
+                  label:'Doanh thu',
+                  data:revenues,
+                  backgroundColor:backgrounds,
+                  barThickness:30,
+                  maxBarThickness:35
+                }]
+              },
+              options:{
+                indexAxis:'y',
+                responsive:true,
+                maintainAspectRatio:true,
+                aspectRatio:2.5,
+                layout:{
+                  padding:{
+                    left:5,
+                    right:5,
+                    top:5,
+                    bottom:5
+                  }
+                },
+                plugins:{
+                  legend:{display:false},
+                  tooltip:{
+                    enabled:true,
+                    padding:8,
+                    titleFont:{size:12},
+                    bodyFont:{size:11},
+                    callbacks:{
+                      label:function(context){
+                        return '$' + formatMoney(context.parsed.x);
+                      }
+                    }
+                  }
+                },
+                scales:{
+                  x:{
+                    beginAtZero:true,
+                    ticks:{
+                      font:{size:10},
+                      padding:5,
+                      callback:function(value){
+                        if(value>=1000000) return (value/1000000).toFixed(1)+'M';
+                        if(value>=1000) return (value/1000).toFixed(1)+'K';
+                        return value;
+                      }
+                    },
+                    grid:{
+                      display:true,
+                      color:'rgba(0,0,0,0.05)'
+                    }
+                  },
+                  y:{
+                    ticks:{
+                      font:{size:11},
+                      padding:8
+                    },
+                    grid:{
+                      display:false
+                    }
+                  }
+                }
+              }
+            });
+            $('#countryComparisonContainer').show();
+            console.log('Country comparison chart displayed successfully');
+          }else{
+            console.log('No data for country comparison, hiding chart');
+            $('#countryComparisonContainer').hide();
+            if(countryComparisonChart) countryComparisonChart.destroy();
+          }
+        })
+        .catch(e=>{
+          console.error('Error loading country comparison:',e);
+          $('#countryComparisonContainer').hide();
+          if(countryComparisonChart) countryComparisonChart.destroy();
+        });
     }
 
     // --- INIT ---

@@ -55,4 +55,22 @@ public interface OrderAnalysisRepository extends org.springframework.data.jpa.re
         @Param("fromDate") LocalDate fromDate,
         @Param("toDate") LocalDate toDate
     );
+
+    @Query(value = """
+        SELECT c.country AS country,
+               SUM(oi.quantity * oi.unit_price) AS totalRevenue
+        FROM orders o
+        JOIN order_items oi ON o.order_id = oi.order_id
+        JOIN customers c ON o.customer_id = c.customer_id
+        WHERE CAST(o.order_date AS DATE) BETWEEN :fromDate AND :toDate
+        AND (:countries IS NULL OR c.country IN (:countries))
+        AND oi.quantity > 0
+        GROUP BY c.country
+        ORDER BY totalRevenue DESC
+    """, nativeQuery = true)
+    List<Map<String, Object>> findRevenueByCountries(
+        @Param("fromDate") LocalDate fromDate,
+        @Param("toDate") LocalDate toDate,
+        @Param("countries") List<String> countries
+    );
 }

@@ -177,4 +177,58 @@ public class ProductAnalysisService {
             .sorted()
             .collect(Collectors.toList());
     }
+
+    public List<Map<String, Object>> compareCountriesByRevenue(ProductAnalysisRequest request) {
+        try {
+            log.info("Country comparison request: fromDate={}, toDate={}, countries={}", 
+                    request.getFromDate(), request.getToDate(), 
+                    request.getCountries() != null ? Arrays.toString(request.getCountries()) : "null");
+            
+            // Parse dates
+            java.time.LocalDate fromDate = java.time.LocalDate.parse(request.getFromDate());
+            java.time.LocalDate toDate = java.time.LocalDate.parse(request.getToDate());
+            
+            // Process country names
+            List<String> countries = null;
+            if (request.getCountries() != null && request.getCountries().length > 0) {
+                List<String> countryNames = Arrays.stream(request.getCountries())
+                        .filter(Objects::nonNull)
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .collect(Collectors.toList());
+                
+                if (!countryNames.isEmpty()) {
+                    countries = countryNames;
+                }
+            }
+            
+            // Query revenue by countries
+            List<Map<String, Object>> rawResults = orderAnalysisRepository.findRevenueByCountries(
+                    fromDate, toDate, countries
+            );
+            
+            // Process results
+            List<Map<String, Object>> processedResults = new ArrayList<>();
+            for (Map<String, Object> row : rawResults) {
+                Map<String, Object> item = new HashMap<>();
+                Object countryObj = row.get("country");
+                if (countryObj != null) {
+                    item.put("country", countryObj.toString().trim());
+                }
+                Object revenueObj = row.get("totalRevenue");
+                if (revenueObj != null) {
+                    item.put("totalRevenue", revenueObj);
+                } else {
+                    item.put("totalRevenue", 0);
+                }
+                processedResults.add(item);
+            }
+            
+            log.info("Returning {} countries for comparison", processedResults.size());
+            return processedResults;
+        } catch (Exception e) {
+            log.error("Error comparing countries: ", e);
+            throw new RuntimeException("Failed to compare countries: " + e.getMessage(), e);
+        }
+    }
 }
