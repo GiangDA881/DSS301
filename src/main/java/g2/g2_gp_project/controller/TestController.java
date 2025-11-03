@@ -19,6 +19,12 @@ public class TestController {
 
     private final AuthtService authService;
 
+    // Simple health check endpoint (no authentication required)
+    @GetMapping("/hello")
+    public ResponseEntity<ApiResponse<String>> hello() {
+        return ResponseEntity.ok(ApiResponse.success("Server is running", "Hello from DSS301!"));
+    }
+
     // Endpoint để tạo user test - Dùng JSON body
     @PostMapping("/create-user")
     public ResponseEntity<ApiResponse<Map<String, Object>>> createTestUser(@RequestBody CreateUserRequest request) {

@@ -1,14 +1,4 @@
--- Xóa các bảng cũ nếu chúng tồn tại để chạy lại file script (Tốt cho lập trình)
-DROP TABLE IF EXISTS order_items CASCADE;
-DROP TABLE IF EXISTS orders CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS revenue_trends CASCADE;
-DROP TABLE IF EXISTS demand_forecasts CASCADE;
-DROP TABLE IF EXISTS campaign_proposals CASCADE;
-DROP TABLE IF EXISTS customer_predictions CASCADE;
-DROP TABLE IF EXISTS sales_summary CASCADE;
-DROP TABLE IF EXISTS products CASCADE;
-DROP TABLE IF EXISTS customers CASCADE;
+
 
 -- =======================================================
 -- 🔹 Dữ liệu Gốc (OLTP) - Dùng cho CRUD & Tính năng Bổ sung
@@ -58,6 +48,9 @@ CREATE TABLE orders (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Bỏ "ON UPDATE" (Spring Boot sẽ xử lý)
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
 );
+
+ALTER TABLE orders ALTER COLUMN order_date TYPE timestamp;
+ALTER TABLE orders ALTER COLUMN created_at TYPE timestamp
 
 -- Bảng Order_Items (Chi tiết đơn hàng - Chuẩn PostgreSQL)
 CREATE TABLE order_items (
