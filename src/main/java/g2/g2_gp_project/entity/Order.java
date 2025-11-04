@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,12 +22,12 @@ public class Order {
     @Column(name = "order_id", length = 20)
     private String orderId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+
     @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    private String customer;
 
     @Column(name = "order_date", nullable = false)
-    private LocalDateTime orderDate;
+    private LocalDate orderDate;
 
     @Column(name = "status", length = 50)
     private String status = "Pending";

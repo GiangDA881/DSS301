@@ -133,7 +133,7 @@ public class SalesETLService {
             // Tạo Order
             Order order = new Order();
             order.setOrderId(invoiceNo);
-            order.setCustomerId(items.get(0).getCustomerID());
+            order.setCustomer(items.get(0).getCustomerID());
             order.setOrderDate(items.get(0).getInvoiceDate().toLocalDate());
             order.setStatus("Completed");
 
@@ -156,8 +156,8 @@ public class SalesETLService {
             // Tạo Order Items
             for (RetailData item : items) {
                 OrderItem orderItem = new OrderItem();
-                orderItem.setOrderId(invoiceNo);
-                orderItem.setProductId(item.getStockCode());
+                orderItem.setOrder(invoiceNo);
+                orderItem.setProduct(item.getStockCode());
                 orderItem.setQuantity(item.getQuantity());
                 orderItem.setUnitPrice(BigDecimal.valueOf(item.getUnitPrice()));
 
