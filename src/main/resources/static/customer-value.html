@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Value Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background: #f7f7f7;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        select, input, button {
+            padding: 6px 10px;
+            margin: 5px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #3e8e41;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #searchInput {
+            width: 200px;
+        }
+        canvas {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 Customer Value Analysis</h1>
+
+    <div>
+        <label for="country">Country:</label>
+        <select id="country">
+            <option value="United Kingdom">United Kingdom</option>
+            <option value="Germany">Germany</option>
+            <option value="France">France</option>
+            <option value="USA">USA</option>
+        </select>
+
+        <label for="threshold">Threshold:</label>
+        <input type="number" id="threshold" placeholder="e.g. 1000" min="0" step="100">
+
+        <label for="limit">Top N:</label>
+        <input type="number" id="limit" value="10" min="1" max="50">
+
+        <label for="chartType">Chart Type:</label>
+        <select id="chartType">
+            <option value="bar">Bar</option>
+            <option value="line">Line</option>
+            <option value="pie">Pie</option>
+        </select>
+
+        <button onclick="analyze()">Analyze</button>
+    </div>
+
+    <div style="margin-top:10px;">
+        <label for="searchInput">Search Customer ID:</label>
+        <input type="text" id="searchInput" placeholder="Enter Customer ID..." onkeyup="filterTable()">
+    </div>
+
+    <canvas id="chart" height="200"></canvas>
+
+    <table id="resultTable">
+        <thead>
+        <tr>
+            <th>Customer ID</th>
+            <th>Total Spent (£)</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+    let myChart;
+
+    async function analyze() {
+        const country = document.getElementById('country').value || 'All';
+        const threshold = document.getElementById('threshold').value || 0;
+        const limit = document.getElementById('limit').value || 10;
+        const chartType = document.getElementById('chartType').value || 'bar';
+
+        try {
+            const url = `http://localhost:8080/api/customer-value/analyze?country=${country}&threshold=${threshold}&limit=${limit}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Lỗi khi lấy dữ liệu từ server');
+            const data = await res.json();
+
+            // Cập nhật bảng
+            const tbody = document.querySelector("#resultTable tbody");
+            tbody.innerHTML = "";
+            data.forEach(c => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td>${c.customerID}</td><td>${c.totalSpent.toFixed(2)}</td>`;
+                tbody.appendChild(tr);
+            });
+
+            // Vẽ chart
+            const ctx = document.getElementById('chart').getContext('2d');
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: data.map(c => c.customerID),
+                    datasets: [{
+                        label: 'Total Spent (£)',
+                        data: data.map(c => c.totalSpent),
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: chartType !== 'pie' },
+                        title: { display: true, text: `Top ${limit} khách hàng chi tiêu cao nhất` },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Total Spent: £${context.raw.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: chartType !== 'pie' ? { y: { beginAtZero: true } } : {}
+                }
+            });
+
+        } catch (err) {
+            console.error(err);
+            alert('Đã có lỗi xảy ra khi phân tích dữ liệu.');
+        }
+    }
+
+    // Chức năng search Customer ID
+    function filterTable() {
+        const input = document.getElementById("searchInput").value.toLowerCase();
+        const rows = document.querySelectorAll("#resultTable tbody tr");
+        rows.forEach(row => {
+            const customerID = row.cells[0].textContent.toLowerCase();
+            row.style.display = customerID.includes(input) ? "" : "none";
+        });
+    }
+</script>
+</body>
+</html>

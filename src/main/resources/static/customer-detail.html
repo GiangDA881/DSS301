@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Detail with Pagination</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f9f9f9;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        a {
+            text-decoration: none;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        #summary {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        #summary span {
+            font-weight: bold;
+        }
+        #searchContainer {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        #searchInput {
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            width: 300px;
+        }
+        canvas {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            max-width: 1000px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .pagination button {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #4CAF50;
+            background: white;
+            cursor: pointer;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .pagination button.active {
+            background: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<a href="customer-list.html">← Quay lại danh sách</a>
+<h1>Customer Transactions</h1>
+
+<div id="summary">
+    <span>Tổng số đơn hàng: <span id="totalOrders">0</span></span>
+    <span>Tổng chi tiêu (£): <span id="totalSpent">0.00</span></span>
+    <span>Sản phẩm mua nhiều nhất: <span id="topProduct">-</span></span>
+</div>
+
+<div id="searchContainer">
+    <label for="searchInput">Tìm theo sản phẩm:</label>
+    <input type="text" id="searchInput" placeholder="Nhập tên sản phẩm..." onkeyup="filterAndRender()">
+</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>Invoice No</th>
+        <th>Stock Code</th>
+        <th>Description</th>
+        <th>Quantity</th>
+        <th>Unit Price</th>
+        <th>Invoice Date</th>
+        <th>Country</th>
+    </tr>
+    </thead>
+    <tbody id="transactionTableBody"></tbody>
+</table>
+
+<div class="pagination" id="pagination"></div>
+
+<h2>📊 Sản phẩm mua nhiều nhất</h2>
+<canvas id="productChart" height="400"></canvas>
+
+<script>
+    let transactions = [];
+    let filteredTransactions = [];
+    const rowsPerPage = 20;
+    let currentPage = 1;
+
+    async function loadCustomerDetails() {
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+
+        try {
+            const res = await fetch(`/api/customers/${id}`);
+            if (!res.ok) throw new Error('Lỗi khi lấy dữ liệu từ server');
+            transactions = await res.json();
+            filteredTransactions = [...transactions];
+
+            updateSummary(filteredTransactions);
+            renderPagination();
+            renderTable();
+            renderChart(filteredTransactions);
+        } catch (e) {
+            console.error('Lỗi khi tải chi tiết khách hàng:', e);
+            alert('Không thể tải dữ liệu khách hàng.');
+        }
+    }
+
+    function updateSummary(data) {
+        const totalOrders = data.length;
+        const totalSpent = data.reduce((sum, t) => sum + t.quantity * t.unitPrice, 0);
+
+        const productCount = {};
+        data.forEach(t => {
+            if (productCount[t.description]) productCount[t.description] += t.quantity;
+            else productCount[t.description] = t.quantity;
+        });
+
+        let topProduct = '-';
+        let maxQty = 0;
+        for (let p in productCount) {
+            if (productCount[p] > maxQty) {
+                maxQty = productCount[p];
+                topProduct = p;
+            }
+        }
+
+        document.getElementById('totalOrders').textContent = totalOrders;
+        document.getElementById('totalSpent').textContent = totalSpent.toFixed(2);
+        document.getElementById('topProduct').textContent = topProduct;
+    }
+
+    function filterAndRender() {
+        const input = document.getElementById("searchInput").value.toLowerCase();
+        filteredTransactions = transactions.filter(t =>
+            t.description.toLowerCase().includes(input)
+        );
+        currentPage = 1;
+        updateSummary(filteredTransactions);
+        renderPagination();
+        renderTable();
+        renderChart(filteredTransactions);
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('transactionTableBody');
+        tbody.innerHTML = '';
+
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const pageData = filteredTransactions.slice(start, end);
+
+        pageData.forEach(t => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${t.invoiceNo}</td>
+                <td>${t.stockCode}</td>
+                <td>${t.description}</td>
+                <td>${t.quantity}</td>
+                <td>${t.unitPrice.toFixed(2)}</td>
+                <td>${t.invoiceDate}</td>
+                <td>${t.country}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function renderPagination() {
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
+        const pageCount = Math.ceil(filteredTransactions.length / rowsPerPage);
+        for (let i = 1; i <= pageCount; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = i;
+            if (i === currentPage) btn.classList.add('active');
+            btn.onclick = () => { currentPage = i; renderTable(); renderPagination(); };
+            pagination.appendChild(btn);
+        }
+    }
+
+    let myChart;
+
+    function renderChart(data) {
+        const productCount = {};
+        data.forEach(t => {
+            if (productCount[t.description]) productCount[t.description] += t.quantity;
+            else productCount[t.description] = t.quantity;
+        });
+
+        const topProducts = Object.entries(productCount)
+            .sort((a,b) => b[1]-a[1])
+            .slice(0,10);
+
+        const labels = topProducts.map(p => p[0]);
+        const quantities = topProducts.map(p => p[1]);
+
+        const ctx = document.getElementById('productChart').getContext('2d');
+        if (myChart) myChart.destroy();
+
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Số lượng mua',
+                    data: quantities,
+                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Top 10 sản phẩm mua nhiều nhất' }
+                },
+                scales: {
+                    y: { beginAtZero: true },
+                    x: { ticks: { autoSkip: false } }
+                }
+            }
+        });
+    }
+
+    loadCustomerDetails();
+</script>
+</body>
+</html>
