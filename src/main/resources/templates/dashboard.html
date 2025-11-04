@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Performance Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header-section h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .date-selector {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .date-selector label {
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .date-selector select,
+        .date-selector input[type="date"] {
+            padding: 10px 15px;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .date-selector select:focus,
+        .date-selector input[type="date"]:focus {
+            outline: none;
+            border-color: #4285f4;
+        }
+
+        .date-selector .custom-dates {
+            display: none;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .date-selector .custom-dates.active {
+            display: flex;
+        }
+
+        .btn-apply {
+            padding: 10px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-apply:hover {
+            transform: translateY(-2px);
+        }
+
+        .tabs-container {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .tabs-header {
+            display: flex;
+            border-bottom: 2px solid #f0f0f0;
+            background: #fafbfc;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 18px 20px;
+            background: transparent;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            color: #4285f4;
+            background: #f5f8ff;
+        }
+
+        .tab-btn.active {
+            color: #4285f4;
+            background: white;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #4285f4;
+        }
+
+        .tabs-content {
+            padding: 30px;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* Tab 1: Tổng quan */
+        .kpi-section {
+            margin-bottom: 30px;
+        }
+
+        .kpi-section h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .kpi-card.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .kpi-card.green { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .kpi-card.orange { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+
+        .kpi-card .label {
+            color: rgba(255,255,255,0.9);
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .kpi-card .value {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .charts-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .chart-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #e0e6ed;
+        }
+
+        .chart-box h4 {
+            color: #333;
+            font-size: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+        }
+
+        /* Tab 2: Chi tiết theo quốc gia */
+        .country-selector {
+            margin-bottom: 25px;
+        }
+
+        .country-selector label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .country-selector select {
+            width: 300px;
+            padding: 12px 15px;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .country-kpis {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .country-kpi {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #4285f4;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .country-kpi .label {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .country-kpi .value {
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .products-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #e0e6ed;
+        }
+
+        .products-table h4 {
+            padding: 20px;
+            background: #f8f9fa;
+            color: #333;
+            font-size: 15px;
+            border-bottom: 2px solid #e0e6ed;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #4285f4;
+            color: white;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        th:last-child, td:last-child {
+            text-align: center;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* Tab 3: So sánh */
+        .comparison-section {
+            margin-bottom: 30px;
+        }
+
+        .comparison-section h4 {
+            color: #333;
+            font-size: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .comparison-inputs {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 150px 1fr 1fr;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .input-row label {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .input-row input {
+            padding: 10px 15px;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .gap-analysis {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #e0e6ed;
+            margin-bottom: 25px;
+        }
+
+        .gap-table {
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .gap-table th {
+            background: #f8f9fa;
+            color: #333;
+            padding: 12px;
+            border: 1px solid #e0e6ed;
+        }
+
+        .gap-table td {
+            padding: 12px;
+            border: 1px solid #e0e6ed;
+        }
+
+        .gap-positive {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .gap-negative {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .recommendation-box {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .recommendation-box ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .recommendation-box li {
+            color: #333;
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .charts-row, .country-kpis {
+                grid-template-columns: 1fr;
+            }
+
+            .input-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Date Range Selector -->
+    <div class="header-section">
+        <h3>1. Khoảng thời gian (Date Range Selector)</h3>
+        <div class="date-selector">
+            <label>Tháng này</label>
+            <select id="periodSelector" onchange="toggleCustomDates()">
+                <option value="today">Hôm nay</option>
+                <option value="yesterday">Hôm qua</option>
+                <option value="last7days">7 ngày qua</option>
+                <option value="last30days">30 ngày qua</option>
+                <option value="thismonth" selected>Tháng này</option>
+                <option value="lastmonth">Tháng trước</option>
+                <option value="thisquarter">Quý này</option>
+                <option value="thisyear">Năm nay</option>
+                <option value="custom">Tùy chỉnh</option>
+            </select>
+
+            <div id="customDates" class="custom-dates">
+                <label>Từ:</label>
+                <input type="date" id="startDate">
+                <label>Đến:</label>
+                <input type="date" id="endDate">
+            </div>
+
+            <button class="btn-apply" onclick="applyDateFilter()">Xuất sang Trang lĩnh</button>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+        <div class="tabs-header">
+            <button class="tab-btn active" onclick="switchTab(0)">Tab 1: Tổng quan Hiệu suất</button>
+            <button class="tab-btn" onclick="switchTab(1)">Tab 2: Chi tiết theo Quốc gia</button>
+            <button class="tab-btn" onclick="switchTab(2)">Tab 3: So sánh với Mục tiêu</button>
+        </div>
+
+        <div class="tabs-content">
+            <!-- Tab 1: Tổng quan -->
+            <div class="tab-panel active" id="tab1">
+                <div class="kpi-section">
+                    <h3>3. Bảng KPIs tổng hợp (Toàn cầu)</h3>
+                    <div class="kpi-grid">
+                        <div class="kpi-card blue">
+                            <div class="label">Tổng Doanh Thu</div>
+                            <div class="value" id="totalRevenue">12.5 Tỷ VND</div>
+                        </div>
+                        <div class="kpi-card green">
+                            <div class="label">Tổng Đơn Hàng</div>
+                            <div class="value" id="totalOrders">55,200</div>
+                        </div>
+                        <div class="kpi-card orange">
+                            <div class="label">Giá trị đơn hàng trung bình (AOV)</div>
+                            <div class="value" id="avgOrderValue">226,449 VND</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kpi-section">
+                    <h3>1. Bản đồ nhiệt doanh thu toàn cầu</h3>
+                    <div class="charts-row">
+                        <div class="chart-box">
+
+                            <div class="chart-container">
+                                <canvas id="heatmapChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kpi-section">
+                    <h3> Biểu đồ cột "Top 10 Quốc gia theo Doanh thu"</h3>
+                    <div class="charts-row">
+                        <div class="chart-box">
+                            <h4>📊 Top 10 Quốc Gia</h4>
+                            <div class="chart-container">
+                                <canvas id="top10Chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Chi tiết theo quốc gia -->
+            <div class="tab-panel" id="tab2">
+                <div class="country-selector">
+                    <label>1. Chọn quốc gia</label>
+                    <select id="countrySelect" onchange="loadCountryDetails()">
+                        <option value="">-- Chọn quốc gia --</option>
+                    </select>
+                </div>
+
+                <div class="kpi-section">
+                    <h3>2. Các thẻ KPI Chi tiết</h3>
+                    <div class="country-kpis">
+                        <div class="country-kpi">
+                            <div class="label">Doanh thu</div>
+                            <div class="value" id="countryRevenue">3.5 Tỷ VND</div>
+                        </div>
+                        <div class="country-kpi">
+                            <div class="label">Số đơn hàng</div>
+                            <div class="value" id="countryOrders">15,000</div>
+                        </div>
+                        <div class="country-kpi">
+                            <div class="label">AOV</div>
+                            <div class="value" id="countryAOV">233,333 VND</div>
+                        </div>
+                        <div class="country-kpi">
+                            <div class="label">Doanh thu / Khách hàng</div>
+                            <div class="value" id="countryRevenuePerCustomer">300,000 VND</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="products-table">
+                    <h4>3. Bảng "Top 5 sản phẩm bán chạy nhất"</h4>
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Sản phẩm</th>
+                            <th>Doanh số (VND)</th>
+                            <th>Số lượng bán ra</th>
+                        </tr>
+                        </thead>
+                        <tbody id="topProductsBody">
+                        <tr>
+                            <td>1</td>
+                            <td>Sản phẩm X - Phiên bản cao cấp</td>
+                            <td>500,000,000</td>
+                            <td>1,000</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab 3: So sánh -->
+            <div class="tab-panel" id="tab3">
+                <div class="comparison-section">
+                    <h4>2.3.1 Nội dung nhập liệu Mục tiêu & Chi phí Marketing</h4>
+                    <div class="comparison-inputs">
+                        <div class="input-grid">
+                            <div class="input-row">
+                                <label>Quốc gia</label>
+                                <label>Mục tiêu Doanh thu (VND)</label>
+                                <label>Chi phí Marketing (VND)</label>
+                            </div>
+                            <div class="input-row">
+                                <label>Việt Nam (VN)</label>
+                                <input type="text" id="targetVN" value="5,000,000,000">
+                                <input type="text" id="marketingVN" value="100,000,000">
+                            </div>
+                            <div class="input-row">
+                                <label>Hoa Kỳ (US)</label>
+                                <input type="text" id="targetUS" value="8,000,000,000">
+                                <input type="text" id="marketingUS" value="250,000,000">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comparison-section">
+                    <h4>2.3.3 Phân tích khoảng cách và Gợi ý</h4>
+                    <div class="gap-analysis">
+                        <h5 style="margin-bottom: 15px;">1. Bảng Phân tích khoảng cách (Gap Analysis)</h5>
+                        <table class="gap-table">
+                            <thead>
+                            <tr>
+                                <th>Quốc gia</th>
+                                <th>Doanh thu Thực tế</th>
+                                <th>Mục tiêu Doanh thu</th>
+                                <th>Chênh lệch (Thực tế - Mục tiêu)</th>
+                                <th>Hoàn thành Mục tiêu (%)</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td><strong>Việt Nam (VN)</strong></td>
+                                <td>5,200,000,000 VND</td>
+                                <td>5,000,000,000 VND</td>
+                                <td class="gap-positive">+200,000,000 VND</td>
+                                <td class="gap-positive">104%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Hoa Kỳ (US)</strong></td>
+                                <td>6,500,000,000 VND</td>
+                                <td>8,000,000,000 VND</td>
+                                <td class="gap-negative">-1,500,000,000 VND</td>
+                                <td class="gap-negative">81.25%</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="recommendation-box">
+                        <h5 style="margin-bottom: 10px;">2. Khung Gợi ý tự động (Dựa trên kết quả đạt định)</h5>
+                        <ul>
+                            <li><strong>"Việt Nam":</strong> Thị trường đã vượt mục tiêu (104%). Đề xuất xem xét tăng cường đầu tư để duy mạnh tăng trưởng và tận dụng đà phát triển của thị trường này.</li>
+                            <li><strong>"Hoa Kỳ":</strong> Thị trường chưa đạt mục tiêu (81.25%). Cần đánh giá lại chiến lược marketing và bán tại thị trường này để cải thiện hiệu suất.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = 'http://localhost:8080/api/dashboard';
+    let charts = {};
+    let currentDateRange = { start: null, end: null };
+
+    // Toggle custom dates
+    function toggleCustomDates() {
+        const selector = document.getElementById('periodSelector');
+        const customDates = document.getElementById('customDates');
+
+        if (selector.value === 'custom') {
+            customDates.classList.add('active');
+        } else {
+            customDates.classList.remove('active');
+            applyDateFilter();
+        }
+    }
+
+    // Calculate date range
+    function getDateRange() {
+        const selector = document.getElementById('periodSelector').value;
+        const today = new Date();
+        let start, end;
+
+        switch(selector) {
+            case 'today':
+                start = end = today;
+                break;
+            case 'yesterday':
+                start = end = new Date(today.setDate(today.getDate() - 1));
+                break;
+            case 'last7days':
+                end = new Date();
+                start = new Date(today.setDate(today.getDate() - 7));
+                break;
+            case 'last30days':
+                end = new Date();
+                start = new Date(today.setDate(today.getDate() - 30));
+                break;
+            case 'thismonth':
+                start = new Date(today.getFullYear(), today.getMonth(), 1);
+                end = new Date();
+                break;
+            case 'lastmonth':
+                start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                end = new Date(today.getFullYear(), today.getMonth(), 0);
+                break;
+            case 'thisquarter':
+                const quarter = Math.floor(today.getMonth() / 3);
+                start = new Date(today.getFullYear(), quarter * 3, 1);
+                end = new Date();
+                break;
+            case 'thisyear':
+                start = new Date(today.getFullYear(), 0, 1);
+                end = new Date();
+                break;
+            case 'custom':
+                start = new Date(document.getElementById('startDate').value);
+                end = new Date(document.getElementById('endDate').value);
+                break;
+        }
+
+        return {
+            start: start.toISOString().split('T')[0],
+            end: end.toISOString().split('T')[0]
+        };
+    }
+
+    // Apply date filter
+    function applyDateFilter() {
+        currentDateRange = getDateRange();
+        loadDashboardData();
+    }
+
+    // Switch tabs
+    function switchTab(index) {
+        const tabs = document.querySelectorAll('.tab-btn');
+        const panels = document.querySelectorAll('.tab-panel');
+
+        tabs.forEach(tab => tab.classList.remove('active'));
+        panels.forEach(panel => panel.classList.remove('active'));
+
+        tabs[index].classList.add('active');
+        panels[index].classList.add('active');
+    }
+
+    // Load dashboard data
+    async function loadDashboardData() {
+        try {
+            const params = currentDateRange.start ?
+                `?startDate=${currentDateRange.start}&endDate=${currentDateRange.end}` : '';
+
+            const [overview, salesByCountry, comparison] = await Promise.all([
+                fetch(`${API_BASE}/overview${params}`).then(r => r.json()),
+                fetch(`${API_BASE}/sales-by-country${params}`).then(r => r.json()),
+                fetch(`${API_BASE}/country-comparison${params}`).then(r => r.json())
+            ]);
+
+            updateTab1(overview, salesByCountry, comparison);
+            populateCountrySelector(comparison);
+        } catch (error) {
+            console.error('Error loading data:', error);
+        }
+    }
+
+    // Update Tab 1
+    function updateTab1(overview, salesByCountry, comparison) {
+        // Update KPIs
+        document.getElementById('totalRevenue').textContent =
+            formatCurrency(overview.totalRevenue);
+        document.getElementById('totalOrders').textContent =
+            formatNumber(overview.totalOrders);
+        document.getElementById('avgOrderValue').textContent =
+            formatCurrency(overview.avgOrderValue);
+
+        // Heatmap Chart
+        const heatmapCtx = document.getElementById('heatmapChart').getContext('2d');
+        if (charts.heatmap) charts.heatmap.destroy();
+
+        const countryData = comparison.slice(0, 8);
+        charts.heatmap = new Chart(heatmapCtx, {
+            type: 'bar',
+            data: {
+                labels: countryData.map(c => c.country),
+                datasets: [{
+                    label: 'Doanh thu',
+                    data: countryData.map(c => c.total_revenue),
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6', '#ec4899', '#06b6d4', '#84cc16']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y'
+            }
+        });
+
+        // Top 10 Chart
+        const top10Ctx = document.getElementById('top10Chart').getContext('2d');
+        if (charts.top10) charts.top10.destroy();
+
+        charts.top10 = new Chart(top10Ctx, {
+            type: 'bar',
+            data: {
+                labels: comparison.slice(0, 10).map(c => c.country),
+                datasets: [{
+                    label: 'Doanh thu (VND)',
+                    data: comparison.slice(0, 10).map(c => c.total_revenue),
+                    backgroundColor: '#4285f4'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y'
+            }
+        });
+    }
+
+    // Populate country selector
+    function populateCountrySelector(comparison) {
+        const select = document.getElementById('countrySelect');
+        select.innerHTML = '<option value="">-- Chọn quốc gia --</option>';
+
+        comparison.forEach(c => {
+            const option = document.createElement('option');
+            option.value = c.country;
+            option.textContent = c.country;
+            select.appendChild(option);
+        });
+    }
+
+    // Load country details
+    // Test function - gọi từ console để test
+    async function testCountryAPI(country) {
+        const url = `${API_BASE}/country-details/${encodeURIComponent(country)}`;
+        console.log('Testing URL:', url);
+        try {
+            const response = await fetch(url);
+            console.log('Response status:', response.status);
+            const data = await response.json();
+            console.log('Response data:', data);
+            return data;
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    // Load country details
+    async function loadCountryDetails() {
+        console.log('=== loadCountryDetails called ===');
+        const country = document.getElementById('countrySelect').value;
+        if (!country) {
+            // Reset if no country selected
+            document.getElementById('countryRevenue').textContent = '0 VND';
+            document.getElementById('countryOrders').textContent = '0';
+            document.getElementById('countryAOV').textContent = '0 VND';
+            document.getElementById('countryRevenuePerCustomer').textContent = '0 VND';
+            document.getElementById('topProductsBody').innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999;">Vui lòng chọn quốc gia</td></tr>';
+            return;
+        }
+
+        try {
+            // Show loading in KPIs
+            document.getElementById('countryRevenue').textContent = '...';
+            document.getElementById('countryOrders').textContent = '...';
+            document.getElementById('countryAOV').textContent = '...';
+            document.getElementById('countryRevenuePerCustomer').textContent = '...';
+
+            // Show loading in table
+            document.getElementById('topProductsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;"><div style="padding:20px;">Đang tải dữ liệu...</div></td></tr>';
+
+            const params = currentDateRange.start ?
+                `?startDate=${currentDateRange.start}&endDate=${currentDateRange.end}` : '';
+
+            // Fetch country statistics and top products for selected country
+            const [countryStats, topProducts] = await Promise.all([
+                fetch(`${API_BASE}/country-details/${encodeURIComponent(country)}${params}`).then(r => {
+                    if (!r.ok) throw new Error('Không thể tải dữ liệu quốc gia');
+                    return r.json();
+                }),
+                fetch(`${API_BASE}/top-products/${encodeURIComponent(country)}?limit=5`).then(r => {
+                    if (!r.ok) throw new Error('Không thể tải dữ liệu sản phẩm');
+                    return r.json();
+                })
+            ]);
+
+            // Update KPIs with country data
+            document.getElementById('countryRevenue').textContent = formatCurrency(countryStats.total_revenue || 0);
+            document.getElementById('countryOrders').textContent = formatNumber(countryStats.total_orders || 0);
+            document.getElementById('countryAOV').textContent = formatCurrency(countryStats.avg_order_value || 0);
+
+            // Calculate revenue per customer
+            const revenuePerCustomer = (countryStats.total_customers > 0) ?
+                (countryStats.total_revenue / countryStats.total_customers) : 0;
+            document.getElementById('countryRevenuePerCustomer').textContent = formatCurrency(revenuePerCustomer);
+
+            // Update top products table for selected country
+            const tbody = document.getElementById('topProductsBody');
+            if (topProducts && topProducts.length > 0) {
+                tbody.innerHTML = topProducts.map((p, idx) => `
+                        <tr>
+                            <td><strong>${idx + 1}</strong></td>
+                            <td><strong>${p.description || p.stock_code}</strong></td>
+                            <td>${formatCurrency(p.revenue)}</td>
+                            <td><strong>${formatNumber(p.total_sold)}</strong></td>
+                        </tr>
+                    `).join('');
+            } else {
+                tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" style="text-align:center; padding:30px; color:#999;">
+                                Không có dữ liệu sản phẩm cho quốc gia <strong>${country}</strong>
+                            </td>
+                        </tr>
+                    `;
+            }
+        } catch (error) {
+            console.error('Error loading country details:', error);
+
+            // Reset KPIs on error
+            document.getElementById('countryRevenue').textContent = '0 VND';
+            document.getElementById('countryOrders').textContent = '0';
+            document.getElementById('countryAOV').textContent = '0 VND';
+            document.getElementById('countryRevenuePerCustomer').textContent = '0 VND';
+
+            // Show error in table
+            document.getElementById('topProductsBody').innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align:center; padding:30px; color:#ef4444;">
+                            ⚠️ Lỗi: ${error.message}<br>
+                            <small>Vui lòng kiểm tra kết nối backend</small>
+                        </td>
+                    </tr>
+                `;
+        }
+    }
+
+    // Format currency
+    function formatCurrency(value) {
+        if (!value) return '0 VND';
+        const billions = value / 1000000000;
+        if (billions >= 1) {
+            return billions.toFixed(1) + ' Tỷ $';
+        }
+        const millions = value / 1000000;
+        if (millions >= 1) {
+            return millions.toFixed(1) + ' Triệu $';
+        }
+        return new Intl.NumberFormat('vi-VN').format(value) + ' $';
+    }
+
+    // Format number
+    function formatNumber(value) {
+        return new Intl.NumberFormat('vi-VN').format(value || 0);
+    }
+
+    // Initialize
+    window.addEventListener('load', () => {
+        // Set default dates
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        document.getElementById('startDate').valueAsDate = firstDay;
+        document.getElementById('endDate').valueAsDate = today;
+
+        // Load initial data
+        applyDateFilter();
+    });
+</script>
+</body>
+</html>
