@@ -157,7 +157,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.status === 'UP') {
+                    if (data.status === 'UP') {git
                         updateStatus('postgresql', 'success', '✅ Connected');
                     } else {
                         updateStatus('postgresql', 'error', '❌ Down');
