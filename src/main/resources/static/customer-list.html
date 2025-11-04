@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 8px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px 10px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        a.btn {
+            background: #4CAF50;
+            color: white;
+            padding: 6px 12px;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background: #4CAF50;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #pageIndicator {
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Customer List</h1>
+
+<table>
+    <thead>
+    <tr>
+        <th>Customer ID</th>
+        <th>Country</th>
+        <th>Total Spent</th>
+        <th>Total Orders</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody id="customerTableBody"></tbody>
+</table>
+
+<div class="pagination">
+    <button id="prevBtn">← Trang trước</button>
+    <span id="pageIndicator">Trang 1</span>
+    <button id="nextBtn">Trang sau →</button>
+</div>
+
+<script>
+    let currentPage = 0;
+    const pageSize = 20;
+
+    async function loadCustomers(page = 0) {
+        try {
+            const res = await fetch(`/api/customers/list?page=${page}&size=${pageSize}`);
+            if (!res.ok) {
+                console.error("Lỗi khi gọi API:", res.status);
+                return;
+            }
+
+            const data = await res.json();
+            const tbody = document.getElementById('customerTableBody');
+            tbody.innerHTML = '';
+
+            if (Array.isArray(data) && data.length > 0) {
+                data.forEach(c => {
+                    const row = `
+            <tr>
+              <td>${c.customerID}</td>
+              <td>${c.country}</td>
+              <td>${c.totalSpent ? c.totalSpent.toFixed(2) : 0}</td>
+              <td>${c.totalOrders}</td>
+              <td><a class="btn" href="customer-detail.html?id=${c.customerID}">Xem chi tiết</a></td>
+            </tr>
+          `;
+                    tbody.innerHTML += row;
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="5">Không có dữ liệu để hiển thị</td></tr>`;
+            }
+
+            // cập nhật hiển thị phân trang
+            document.getElementById('pageIndicator').textContent = `Trang ${page + 1}`;
+            document.getElementById('prevBtn').disabled = page === 0;
+            document.getElementById('nextBtn').disabled = data.length < pageSize;
+
+        } catch (error) {
+            console.error("Lỗi khi tải danh sách khách hàng:", error);
+        }
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+        if (currentPage > 0) {
+            currentPage--;
+            loadCustomers(currentPage);
+        }
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+        currentPage++;
+        loadCustomers(currentPage);
+    });
+
+    // tải trang đầu tiên
+    loadCustomers();
+</script>
+
+</body>
+</html>
