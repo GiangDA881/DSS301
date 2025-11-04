@@ -191,12 +191,11 @@
         <td>${item.country||''}</td>
         <td class="text-end">${formatNumber(item.totalQuantity)}</td>
         <td class="text-end">$${formatMoney(item.totalRevenue)}</td>
-        <td class="text-end">${formatNumber(item.marketSharePercent,2)}%</td>
       </tr>`).join('');
       $('#resultsTable').html(`
         <div class="table-responsive">
           <table class="table">
-            <thead><tr><th>Xếp hạng</th><th>Mã</th><th>Tên</th><th>Quốc gia</th><th class="text-end">Số lượng</th><th class="text-end">Doanh thu</th><th class="text-end">Tỷ trọng</th></tr></thead>
+            <thead><tr><th>Xếp hạng</th><th>Mã</th><th>Tên</th><th>Quốc gia</th><th class="text-end">Số lượng</th><th class="text-end">Doanh thu</th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>`);
