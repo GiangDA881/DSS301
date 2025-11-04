@@ -124,6 +124,73 @@
             border-radius: 5px;
             margin: 10px 0;
         }
+
+        .btn-action {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-action:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #dc3545;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-box {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .result-box.show {
+            display: block;
+        }
+
+        .error-box {
+            background: #f8d7da;
+            border: 1px solid #dc3545;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .error-box.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -143,58 +210,13 @@
     <div class="container">
         <div class="dashboard-grid">
             <div class="card">
-                <h2>📊 System Overview</h2>
-                <div class="stat-value">1,234</div>
-                <div class="stat-label">Total Users</div>
-            </div>
-
-            <div class="card">
-                <h2>💰 Total Revenue</h2>
-                <div class="stat-value">$125,430</div>
-                <div class="stat-label">This Month</div>
-            </div>
-
-            <div class="card">
-                <h2>📦 Orders</h2>
-                <div class="stat-value">856</div>
-                <div class="stat-label">Pending: 45</div>
-            </div>
-
-            <div class="card">
-                <h2>👥 Active Users</h2>
-                <div class="stat-value">892</div>
-                <div class="stat-label">Online Now: 124</div>
-            </div>
-        </div>
-
-        <div class="dashboard-grid">
-            <div class="card">
-                <h2>⚙️ System Management</h2>
-                <ul class="menu-list">
-                    <li>👤 User Management</li>
-                    <li>🔐 Role & Permissions</li>
-                    <li>🗄️ Database Backup</li>
-                    <li>📊 System Logs</li>
-                    <li>⚡ Performance Monitor</li>
-                </ul>
-            </div>
-
-            <div class="card">
-                <h2>📋 Recent Activities</h2>
-                <div class="alert">🔔 New user registered: john_doe</div>
-                <div class="alert">⚠️ Server CPU usage: 85%</div>
-                <div class="alert">✅ Database backup completed</div>
-                <div class="alert">🔄 System update available</div>
-            </div>
-
-            <div class="card">
-                <h2>🛠️ Admin Tools</h2>
-                <ul class="menu-list">
-                    <li>📧 Send Announcements</li>
-                    <li>🗑️ Manage Data</li>
-                    <li>📈 Reports Generator</li>
-                    <li>🔧 Settings</li>
-                </ul>
+                <h2>� Data Jobs</h2>
+                <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
+                    Quản lý và thực thi các công việc xử lý dữ liệu
+                </p>
+                <button class="btn-action" onclick="window.location.href='/data-job.html'" style="background: #17a2b8;">
+                    🚀 Mở Data Job Manager
+                </button>
             </div>
         </div>
     </div>
@@ -218,7 +240,174 @@
             localStorage.clear();
             window.location.href = '/login.html';
         }
+
+        // ========================================
+        // CHẠY PHÂN TÍCH RFM
+        // ========================================
+        async function runRfmAnalysis() {
+            const btn = document.getElementById('btnRfm');
+            const resultBox = document.getElementById('rfmResult');
+            const errorBox = document.getElementById('rfmError');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Đang phân tích...';
+            resultBox.classList.remove('show');
+            errorBox.classList.remove('show');
+            
+            try {
+                const response = await fetch('/marketing/analysis/api/run-rfm', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('API trả về lỗi: ' + response.statusText);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultBox.innerHTML = `
+                        <strong>✅ Phân tích thành công!</strong><br>
+                        📊 Đã phân tích: <strong>${result.recordsSaved}</strong> khách hàng<br>
+                        ⏱️ Thời gian: <strong>${result.durationSeconds.toFixed(2)}s</strong>
+                    `;
+                    resultBox.classList.add('show');
+                    
+                    // Cập nhật hoạt động
+                    addActivity('📊 Phân tích RFM hoàn tất - ' + result.recordsSaved + ' khách hàng');
+                } else {
+                    throw new Error(result.message);
+                }
+                
+            } catch (error) {
+                console.error('Lỗi:', error);
+                errorBox.innerHTML = `<strong>❌ Lỗi:</strong> ${error.message}`;
+                errorBox.classList.add('show');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔄 Chạy phân tích RFM';
+            }
+        }
+
+        // ========================================
+        // KIỂM TRA TRẠNG THÁI API
+        // ========================================
+        async function checkApiStatus() {
+            const btn = document.getElementById('btnStatus');
+            const resultBox = document.getElementById('statusResult');
+            const errorBox = document.getElementById('statusError');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Đang kiểm tra...';
+            resultBox.classList.remove('show');
+            errorBox.classList.remove('show');
+            
+            try {
+                const response = await fetch('/marketing/analysis/api/status');
+                
+                if (!response.ok) {
+                    throw new Error('Không thể kết nối đến API');
+                }
+                
+                const status = await response.json();
+                
+                resultBox.innerHTML = `
+                    <strong>✅ Hệ thống hoạt động bình thường</strong><br>
+                    🔧 Service: <strong>${status.service}</strong><br>
+                    ✓ Status: <strong>${status.status}</strong><br>
+                    📝 ${status.description}
+                `;
+                resultBox.classList.add('show');
+                
+            } catch (error) {
+                console.error('Lỗi:', error);
+                errorBox.innerHTML = `<strong>❌ Lỗi:</strong> ${error.message}`;
+                errorBox.classList.add('show');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔍 Kiểm tra trạng thái';
+            }
+        }
+
+        // ========================================
+        // XEM PHÂN KHÚC
+        // ========================================
+        async function viewSegments() {
+            try {
+                const response = await fetch('/campaign/api/segments');
+                if (!response.ok) throw new Error('Không thể tải segments');
+                
+                const segments = await response.json();
+                
+                if (segments.length === 0) {
+                    alert('⚠️ Chưa có dữ liệu phân khúc.\nVui lòng chạy "Phân tích RFM" trước!');
+                } else {
+                    const segmentList = segments.map((s, i) => `${i + 1}. ${s}`).join('\n');
+                    alert(`📊 Phân khúc khách hàng hiện có (${segments.length}):\n\n${segmentList}`);
+                }
+            } catch (error) {
+                alert('❌ Lỗi: ' + error.message);
+            }
+        }
+
+        // ========================================
+        // XEM DỰ BÁO KHÁCH HÀNG
+        // ========================================
+        function viewPredictions() {
+            alert('🔄 Chức năng đang phát triển\n\nBạn có thể kiểm tra dữ liệu trong database:\nBảng: customer_predictions');
+        }
+
+        // ========================================
+        // XEM CHIẾN DỊCH
+        // ========================================
+        function viewCampaigns() {
+            alert('🔄 Chức năng đang phát triển\n\nBạn có thể kiểm tra dữ liệu trong database:\nBảng: campaign_proposals');
+        }
+
+        // ========================================
+        // XUẤT DỮ LIỆU
+        // ========================================
+        function exportData() {
+            alert('📥 Chức năng xuất dữ liệu đang phát triển\n\nHiện tại bạn có thể:\n- Truy vấn trực tiếp từ PostgreSQL\n- Sử dụng pgAdmin để export CSV/Excel');
+        }
+
+        // ========================================
+        // THÊM HOẠT ĐỘNG
+        // ========================================
+        function addActivity(message) {
+            const container = document.getElementById('recentActivities');
+            const time = new Date().toLocaleTimeString('vi-VN');
+            const activity = document.createElement('div');
+            activity.className = 'alert';
+            activity.innerHTML = `🕐 ${time} - ${message}`;
+            
+            // Thêm vào đầu
+            if (container.firstChild) {
+                container.insertBefore(activity, container.firstChild);
+            } else {
+                container.appendChild(activity);
+            }
+            
+            // Giới hạn 5 hoạt động
+            const activities = container.querySelectorAll('.alert');
+            if (activities.length > 5) {
+                container.removeChild(activities[activities.length - 1]);
+            }
+        }
+
+        // ========================================
+        // INIT - LOAD HOẠT ĐỘNG MẪU
+        // ========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('recentActivities');
+            container.innerHTML = `
+                <div class="alert">✅ Hệ thống khởi động thành công</div>
+                <div class="alert">👤 Admin ${username} đã đăng nhập</div>
+            `;
+        });
     </script>
 </body>
 </html>
-

@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -37,10 +38,29 @@ public class MongoPostgresDataSync {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
 
+    @Value("${app.sync-on-startup:true}")
+    private boolean syncOnStartupEnabled;
+
+    @Value("${app.fail-on-sync-error:true}")
+    private boolean failOnSyncError;
+
     @EventListener(ContextRefreshedEvent.class)
     @Transactional
     public void syncOnStartup() {
-        syncData();
+        if (!syncOnStartupEnabled) {
+            log.info("Mongo-Postgres data sync on startup is disabled (app.sync-on-startup=false)");
+            return;
+        }
+        try {
+            syncData();
+        } catch (Exception e) {
+            log.error("Error during MongoDB to PostgreSQL sync on startup", e);
+            if (failOnSyncError) {
+                throw e;
+            } else {
+                log.warn("Continuing application startup despite sync error (app.fail-on-sync-error=false)");
+            }
+        }
     }
 
     @Transactional
@@ -191,7 +211,7 @@ public class MongoPostgresDataSync {
             log.info("MongoDB to PostgreSQL sync completed successfully");
         } catch (Exception e) {
             log.error("Error during MongoDB to PostgreSQL sync", e);
-            throw e; // Re-throw to fail startup if sync fails
+            throw e;
         }
     }
 

@@ -4,34 +4,34 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import lombok.Data;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "customer_predictions")
+@Data
 public class CustomerPrediction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id")
-    private Customer customer;
+    @Column(name = "customer_id")
+    private String customerId;
 
-    private Integer recency;
+    @Column(name = "segment")
+    private String segment;
+
+    @Column(name = "frequency")
     private Integer frequency;
 
-    @Column(precision = 12, scale = 2)
-    private BigDecimal monetary;
+    @Column(name = "monetary")
+    private Double monetary;
 
-    @Column(name = "repurchase_probability", precision = 5, scale = 2)
-    private BigDecimal repurchaseProbability;
+    @Column(name = "recency")
+    private Integer recency;
+
+    @Column(name = "repurchase_probability")
+    private Double repurchaseProbability;
 
     @Column(name = "prediction_date")
-    private LocalDate predictionDate;
-
-    @Column(length = 50)
-    private String segment;
+    private java.util.Date predictionDate;
 }
