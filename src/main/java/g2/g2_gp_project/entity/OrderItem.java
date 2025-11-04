@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -24,8 +25,9 @@ public class OrderItem {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    private Integer quantity;
+    @Column(name = "quantity", nullable = false)
+    private Integer quantity = 1;
 
     @Column(name = "unit_price", precision = 10, scale = 2)
-    private BigDecimal unitPrice;
+    private BigDecimal unitPrice = BigDecimal.ZERO;
 }

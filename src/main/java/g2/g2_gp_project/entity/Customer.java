@@ -14,20 +14,21 @@ public class Customer {
     @Column(name = "customer_id", length = 20)
     private String customerId;
 
-    @Column(name = "customer_name", length = 100, nullable = false)
+    @Column(name = "customer_name", length = 100)
     private String customerName;
 
-    @Column(length = 100)
+    @Column(name = "country", length = 100)
     private String country;
 
-    @Column(length = 100)
+    @Column(name = "region", length = 100)
     private String region;
 
-    @Column(length = 100)
+    @Column(name = "email", length = 100)
     private String email;
 
-    @Column(length = 10)
+    @Column(name = "gender", length = 10)
     private String gender;
 
+    @Column(name = "age")
     private Integer age;
 }

@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -15,10 +16,10 @@ public class Product {
     @Column(name = "stock_code", length = 20)
     private String stockCode;
 
-    @Column(length = 255)
+    @Column(name = "description", length = 255)
     private String description;
 
-    @Column(length = 100)
+    @Column(name = "category", length = 100)
     private String category;
 
     @Column(name = "unit_price", precision = 10, scale = 2)

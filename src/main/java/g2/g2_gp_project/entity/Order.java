@@ -3,22 +3,19 @@ package g2.g2_gp_project.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -49,30 +46,36 @@ public class Order {
 
     @Column(name = "unit_price", precision = 10, scale = 2)
     private BigDecimal unitPrice;
-
-    @Column(length = 50)
+    @Column(name = "status", length = 50)
     private String status;
+    @Column(name = "subtotal", precision = 10, scale = 2)
+    private BigDecimal subtotal = BigDecimal.ZERO;
 
     @Column(length = 100)
     private String country; // Country from MongoDB
 
-    @Column(precision = 10, scale = 2)
-    private BigDecimal subtotal;
-
-    @Column(precision = 10, scale = 2)
-    private BigDecimal tax;
+    @Column(name = "tax", precision = 10, scale = 2)
+    private BigDecimal tax = BigDecimal.ZERO;
 
     @Column(name = "shipping_fee", precision = 10, scale = 2)
-    private BigDecimal shippingFee;
+    private BigDecimal shippingFee = BigDecimal.ZERO;
 
     @Column(name = "total_amount", precision = 10, scale = 2)
-    private BigDecimal totalAmount;
+    private BigDecimal totalAmount = BigDecimal.ZERO;
+
+    @Column(name = "payment_method", length = 50)
+    private String paymentMethod;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt; // This is InvoiceDate
+    @Column(name = "shipping_address", columnDefinition = "TEXT")
+    private String shippingAddress;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
@@ -80,6 +83,8 @@ public class Order {
         if (createdAt == null) createdAt = now;
         if (updatedAt == null) updatedAt = now;
         if (orderDate == null) orderDate = now;
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate

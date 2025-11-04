@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Import Job - ETL Upload (ADMIN ONLY)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .access-denied {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+        }
+
+        .access-denied h1 {
+            color: #dc3545;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .access-denied p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+
+        .access-denied button {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .access-denied button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            display: none;
+        }
+
+        .container.show {
+            display: block;
+        }
+
+        .admin-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .user-info {
+            text-align: right;
+            margin-bottom: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .user-info .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .user-info .logout-btn:hover {
+            background: #c82333;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-section {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: #f8f9ff;
+        }
+
+        .file-input-wrapper {
+            margin: 20px 0;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .file-label:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-name {
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .upload-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .upload-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .upload-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-log {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .status-log h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .log-entry {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .log-entry.success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .log-entry.error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .log-entry.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .log-entry.warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Access Denied Message (hidden by default) -->
+    <div class="access-denied" id="accessDenied" style="display: none;">
+        <h1>🚫</h1>
+        <h2>Access Denied</h2>
+        <p>This page is only accessible to ADMIN users.</p>
+        <p>Your current role: <strong id="currentRole">-</strong></p>
+        <button onclick="window.location.href='/login.html'">Go to Login</button>
+    </div>
+
+    <!-- Main Container (hidden by default, shown only for ADMIN) -->
+    <div class="container" id="mainContainer">
+        <div class="user-info">
+            <span class="admin-badge">👑 ADMIN</span>
+            <span>Logged in as: <strong id="usernameDisplay">-</strong></span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+        <h1>📊 Data Import Job - ETL Pipeline</h1>
+        <p class="subtitle">Upload CSV or Excel file to process through Extract, Transform, Load pipeline</p>
+
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <label for="fileInput" class="file-label">
+                    📁 Choose File
+                </label>
+                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+                <div class="file-name" id="fileName">No file selected</div>
+            </div>
+            <p style="color: #999; font-size: 12px; margin-top: 10px;">
+                Supported formats: CSV (.csv), Excel (.xlsx, .xls)
+            </p>
+        </div>
+
+        <button class="upload-btn" id="uploadBtn" disabled>
+            Upload and Process
+        </button>
+
+        <div class="status-log">
+            <h3>📋 Status Log</h3>
+            <div id="logContainer">
+                <div class="log-entry info">
+                    ℹ�� Ready to upload. Please select a file to begin.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication and authorization on page load
+        window.addEventListener('load', function() {
+            checkAccess();
+        });
+
+        function checkAccess() {
+            const token = localStorage.getItem('token');
+            const role = localStorage.getItem('role');
+            const username = localStorage.getItem('username');
+
+            // Check if user is logged in
+            if (!token || !role) {
+                showAccessDenied('Not authenticated');
+                setTimeout(() => {
+                    window.location.href = '/login.html';
+                }, 2000);
+                return;
+            }
+
+            // Check if user is ADMIN
+            if (role !== 'Admin') {
+                showAccessDenied(role);
+                return;
+            }
+
+            // User is ADMIN, show main container
+            document.getElementById('mainContainer').classList.add('show');
+            document.getElementById('usernameDisplay').textContent = username || 'Admin';
+            addLog('🔐 Authentication verified. Welcome, Admin!', 'success');
+        }
+
+        function showAccessDenied(currentRole) {
+            document.getElementById('accessDenied').style.display = 'block';
+            document.getElementById('currentRole').textContent = currentRole;
+        }
+
+        function logout() {
+            // Clear all localStorage
+            localStorage.clear();
+            addLog('👋 Logging out...', 'info');
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 1000);
+        }
+
+        // Get JWT token from localStorage
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
+        // Add log entry
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.parentElement.scrollTop = logContainer.parentElement.scrollHeight;
+        }
+
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const logContainer = document.getElementById('logContainer');
+
+        // File selection handler
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                fileName.textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                uploadBtn.disabled = false;
+                addLog(`File selected: ${file.name}`, 'info');
+            } else {
+                fileName.textContent = 'No file selected';
+                uploadBtn.disabled = true;
+            }
+        });
+
+        // Upload handler
+        uploadBtn.addEventListener('click', async function() {
+            const file = fileInput.files[0];
+            if (!file) {
+                addLog('❌ Please select a file first', 'error');
+                return;
+            }
+
+            // Check file size
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            if (file.size > 500 * 1024 * 1024) { // 500MB
+                addLog(`❌ File too large: ${fileSizeMB}MB. Maximum allowed: 500MB`, 'error');
+                return;
+            }
+
+            const token = getToken();
+            if (!token) {
+                addLog('❌ No authentication token found. Please login first.', 'error');
+                setTimeout(() => {
+                    window.location.href = '/login.html';
+                }, 2000);
+                return;
+            }
+
+            // Disable button and show loading
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<span class="loading"></span> Processing...';
+
+            addLog('🚀 Starting ETL process...', 'info');
+            addLog(`📦 File size: ${fileSizeMB}MB`, 'info');
+
+            if (parseFloat(fileSizeMB) > 10) {
+                addLog('⚠️ Large file detected. This may take several minutes...', 'warning');
+                addLog('💡 Please wait patiently and do not close the browser', 'info');
+            }
+
+            addLog('📤 Uploading file to server...', 'info');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch('/api/admin/jobs/upload-csv', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
+                addLog(`⏱️ Processing completed in ${elapsedTime} seconds`, 'info');
+
+                // Check if response is ok
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        addLog('❌ Access denied. Admin role required.', 'error');
+                        setTimeout(() => {
+                            window.location.href = '/login.html';
+                        }, 2000);
+                        return;
+                    } else if (response.status === 500) {
+                        addLog('❌ Server error. Please check if databases are running.', 'error');
+                        addLog('💡 Tip: Run db-test.html to verify database connections', 'warning');
+                        return;
+                    } else if (response.status === 413) {
+                        addLog('❌ File too large for server to handle', 'error');
+                        addLog('💡 Try with a smaller file or increase server limits', 'warning');
+                        return;
+                    } else {
+                        addLog(`❌ HTTP Error: ${response.status} ${response.statusText}`, 'error');
+                        return;
+                    }
+                }
+
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    addLog('✅ File uploaded successfully!', 'success');
+                    addLog(`📊 Step 1 (Extract & Load): ${result.data.rawRecordsLoaded} records loaded to MongoDB`, 'success');
+                    addLog(`🔄 Step 2 (Transform & Load): Processing to PostgreSQL...`, 'info');
+
+                    // Display statistics
+                    const statsHtml = `
+                        <div class="stats">
+                            <div class="stat-card">
+                                <div class="stat-number">${result.data.rawRecordsLoaded}</div>
+                                <div class="stat-label">Raw Records</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${result.data.customersProcessed}</div>
+                                <div class="stat-label">Customers</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${result.data.productsProcessed}</div>
+                                <div class="stat-label">Products</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${result.data.ordersProcessed}</div>
+                                <div class="stat-label">Orders</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${result.data.orderItemsProcessed}</div>
+                                <div class="stat-label">Order Items</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${result.data.errorCount}</div>
+                                <div class="stat-label">Errors</div>
+                            </div>
+                        </div>
+                    `;
+
+                    const statsEntry = document.createElement('div');
+                    statsEntry.className = 'log-entry success';
+                    statsEntry.innerHTML = `<strong>✨ ETL Process Completed!</strong><br>${result.data.message}${statsHtml}`;
+                    logContainer.appendChild(statsEntry);
+
+                    if (result.data.errorCount > 0) {
+                        addLog(`⚠️ Warning: ${result.data.errorCount} records had errors during processing`, 'warning');
+                    }
+
+                    addLog(`✅ Total processing time: ${elapsedTime} seconds`, 'success');
+
+                } else {
+                    // Show error message from server
+                    addLog(`❌ Error: ${result.message || 'Unknown error occurred'}`, 'error');
+
+                    // Check if it's a database connection error
+                    if (result.message && (result.message.includes('MongoDB') || result.message.includes('PostgreSQL'))) {
+                        addLog('💡 Database connection issue detected!', 'warning');
+                        addLog('Please ensure both MongoDB and PostgreSQL are running:', 'info');
+                        addLog('  • MongoDB: localhost:27017', 'info');
+                        addLog('  • PostgreSQL: localhost:5432', 'info');
+                        addLog('  • Run db-test.html to verify connections', 'info');
+                    }
+                }
+
+            } catch (error) {
+                addLog(`❌ Upload failed: ${error.message}`, 'error');
+
+                // Network error handling
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    addLog('🔌 Network error detected. Possible causes:', 'warning');
+                    addLog('  • Server is not running (check if Spring Boot app is started)', 'info');
+                    addLog('  • Database connection timeout', 'info');
+                    addLog('  • File processing timeout (file too large)', 'info');
+                    addLog('💡 Try running db-test.html to diagnose the issue', 'info');
+                }
+
+                console.error('Upload error:', error);
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload and Process';
+            }
+        });
+    </script>
+</body>
+</html>
