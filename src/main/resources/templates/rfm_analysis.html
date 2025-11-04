@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phân tích RFM - Marketing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+
+        .info-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .info-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .info-card ul {
+            margin-left: 20px;
+            margin-top: 10px;
+            color: #666;
+        }
+
+        .info-card ul li {
+            margin-bottom: 8px;
+        }
+
+        .action-section {
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .btn-run {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-run:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-run:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-back {
+            background: #6c757d;
+            color: white;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .btn-back:hover {
+            background: #5a6268;
+        }
+
+        .result-section {
+            display: none;
+            padding: 30px;
+            background: #f0f3ff;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .result-section.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 32px;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-card p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+            margin-bottom: 20px;
+        }
+
+        .segments-info {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .segments-info h4 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .segment-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .segment-item:last-child {
+            border-bottom: none;
+        }
+
+        .segment-name {
+            font-weight: 600;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Phân tích RFM (Recency, Frequency, Monetary)</h1>
+            <p>Phân khúc khách hàng tự động dựa trên hành vi mua hàng</p>
+        </div>
+
+        <div class="content">
+            <!-- Thông tin về RFM -->
+            <div class="info-card">
+                <h3>🎯 Phân tích RFM là gì?</h3>
+                <p>RFM là phương pháp phân khúc khách hàng dựa trên 3 chỉ số:</p>
+                <ul>
+                    <li><strong>Recency (R)</strong> - Gần đây: Bao lâu rồi khách hàng mua hàng lần cuối?</li>
+                    <li><strong>Frequency (F)</strong> - Tần suất: Khách hàng mua hàng bao nhiêu lần?</li>
+                    <li><strong>Monetary (M)</strong> - Giá trị: Khách hàng đã chi tiêu bao nhiêu tiền?</li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>📈 Các phân khúc khách hàng</h3>
+                <ul>
+                    <li><strong>Champions</strong> - Khách hàng VIP: Mua gần đây, thường xuyên, chi nhiều</li>
+                    <li><strong>Loyal</strong> - Trung thành: Mua thường xuyên và chi nhiều</li>
+                    <li><strong>Potential Loyalist</strong> - Tiềm năng: Mua gần đây với tần suất tốt</li>
+                    <li><strong>At Risk</strong> - Có nguy cơ: Đã từng mua nhiều nhưng không mua gần đây</li>
+                    <li><strong>Hibernating</strong> - Ngủ đông: Lâu không mua, tần suất thấp</li>
+                    <li><strong>Lost</strong> - Đã mất: Rất lâu không mua (>1 năm)</li>
+                    <li><strong>New Customers</strong> - Khách mới: Mua gần đây nhưng tần suất thấp</li>
+                    <li><strong>Promising</strong> - Hứa hẹn: Mua gần đây, chi tiêu trung bình</li>
+                    <li><strong>About To Sleep</strong> - Sắp ngủ đông: Các trường hợp khác</li>
+                </ul>
+            </div>
+
+            <!-- Nút chạy phân tích -->
+            <div class="action-section">
+                <h2 style="margin-bottom: 20px; color: #333;">🚀 Bắt đầu phân tích</h2>
+                <p style="color: #666; margin-bottom: 20px;">
+                    Hệ thống sẽ phân tích toàn bộ dữ liệu đơn hàng và tự động gán phân khúc cho mỗi khách hàng
+                </p>
+                <button id="btnRunAnalysis" class="btn-run" onclick="runRfmAnalysis()">
+                    🔄 Chạy phân tích RFM
+                </button>
+                <br>
+                <a href="/marketing/analysis/campaign" class="btn-back">← Quay lại Dashboard</a>
+            </div>
+
+            <!-- Kết quả -->
+            <div id="resultSection" class="result-section">
+                <div id="loadingSpinner" style="display: none;">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Đang phân tích dữ liệu...</div>
+                </div>
+
+                <div id="resultContent" style="display: none;">
+                    <div class="success-message">
+                        <strong>✅ Phân tích hoàn tất!</strong> Dữ liệu đã được cập nhật vào hệ thống.
+                    </div>
+
+                    <div class="result-stats">
+                        <div class="stat-card">
+                            <h3 id="totalRecords">0</h3>
+                            <p>Khách hàng đã phân tích</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="duration">0s</h3>
+                            <p>Thời gian thực thi</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3 id="status">✓</h3>
+                            <p>Trạng thái</p>
+                        </div>
+                    </div>
+
+                    <div class="segments-info">
+                        <h4>📋 Kết quả đã được lưu vào bảng customer_predictions</h4>
+                        <p style="color: #666; margin-top: 10px;">
+                            Bạn có thể sử dụng dữ liệu này để tạo chiến dịch Marketing mục tiêu.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="errorContent" style="display: none;">
+                    <div class="error-message">
+                        <strong>❌ Lỗi!</strong> <span id="errorMessage"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function runRfmAnalysis() {
+            const btnRun = document.getElementById('btnRunAnalysis');
+            const resultSection = document.getElementById('resultSection');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const resultContent = document.getElementById('resultContent');
+            const errorContent = document.getElementById('errorContent');
+
+            // Disable button và hiện loading
+            btnRun.disabled = true;
+            btnRun.textContent = '⏳ Đang phân tích...';
+            
+            resultSection.classList.add('show');
+            loadingSpinner.style.display = 'block';
+            resultContent.style.display = 'none';
+            errorContent.style.display = 'none';
+
+            try {
+                console.log('🔄 Bắt đầu gọi API phân tích RFM...');
+                
+                const response = await fetch('/marketing/analysis/api/run-rfm', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Server trả về lỗi: ' + response.statusText);
+                }
+
+                const result = await response.json();
+                console.log('✅ Kết quả:', result);
+
+                // Ẩn loading
+                loadingSpinner.style.display = 'none';
+
+                if (result.success) {
+                    // Hiển thị kết quả thành công
+                    document.getElementById('totalRecords').textContent = result.recordsSaved;
+                    document.getElementById('duration').textContent = result.durationSeconds.toFixed(2) + 's';
+                    document.getElementById('status').textContent = '✓';
+                    
+                    resultContent.style.display = 'block';
+                } else {
+                    // Hiển thị lỗi
+                    document.getElementById('errorMessage').textContent = result.message;
+                    errorContent.style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('❌ Lỗi:', error);
+                
+                loadingSpinner.style.display = 'none';
+                document.getElementById('errorMessage').textContent = error.message;
+                errorContent.style.display = 'block';
+            } finally {
+                // Enable lại button
+                btnRun.disabled = false;
+                btnRun.textContent = '🔄 Chạy phân tích RFM';
+            }
+        }
+    </script>
+</body>
+</html>
