@@ -17,7 +17,7 @@
         }
 
         .navbar {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            background: linear-gradient(135deg, #5932EA 0%, #4520d4 100%);
             color: white;
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -46,7 +46,7 @@
 
         .logout-btn {
             background: white;
-            color: #007bff;
+            color: #5932EA;
             border: none;
             padding: 10px 20px;
             border-radius: 5px;
@@ -80,7 +80,7 @@
         }
 
         .card h2 {
-            color: #007bff;
+            color: #5932EA;
             margin-bottom: 15px;
             font-size: 20px;
         }
@@ -112,7 +112,7 @@
         }
 
         .menu-list li:hover {
-            background: #007bff;
+            background: #5932EA;
             color: white;
             transform: translateX(10px);
         }
@@ -125,7 +125,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #0056b3;
+            color: #5932EA;
             font-weight: bold;
         }
     </style>
@@ -147,71 +147,54 @@
     <div class="container">
         <div class="dashboard-grid">
             <div class="card">
-                <h2>📈 Sales Trends</h2>
-                <div class="stat-value">+15.3%</div>
-                <div class="stat-label">Growth This Quarter</div>
+                <h2>📈 Total Revenue</h2>
+                <div class="stat-value">$10.6M</div>
+                <div class="stat-label">All Categories</div>
             </div>
 
             <div class="card">
-                <h2>💵 Revenue Analysis</h2>
-                <div class="stat-value">$85,240</div>
-                <div class="stat-label">Last 30 Days</div>
+                <h2>📊 Data Records</h2>
+                <div class="stat-value">541K</div>
+                <div class="stat-label">MongoDB Documents</div>
             </div>
 
             <div class="card">
-                <h2>👥 Customer Insights</h2>
-                <div class="stat-value">2,345</div>
-                <div class="stat-label">Active Customers</div>
+                <h2>🌍 Countries</h2>
+                <div class="stat-value">38</div>
+                <div class="stat-label">Active Markets</div>
             </div>
 
             <div class="card">
-                <h2>📊 RFM Segments</h2>
-                <div class="stat-value">8</div>
-                <div class="stat-label">Customer Segments</div>
-            </div>
-        </div>
-
-        <div class="dashboard-grid">
-            <div class="card">
-                <h2>📊 Revenue Trend</h2>
-                <div class="chart-placeholder">📈 Revenue Chart</div>
-            </div>
-
-            <div class="card">
-                <h2>🎯 Customer Segmentation</h2>
-                <div class="chart-placeholder">🥧 RFM Pie Chart</div>
+                <h2>📦 Categories</h2>
+                <div class="stat-value">7</div>
+                <div class="stat-label">Product Groups</div>
             </div>
         </div>
 
         <div class="dashboard-grid">
             <div class="card">
-                <h2>🔍 Analysis Tools</h2>
+                <h2>🔗 Quick Links</h2>
                 <ul class="menu-list">
-                    <li>📊 Sales Summary Report</li>
-                    <li>🎯 RFM Analysis</li>
-                    <li>📈 Demand Forecasting</li>
-                    <li>💰 Revenue Trends</li>
-                    <li>👥 Customer Predictions</li>
+                    <li onclick="window.location.href='/revenue-analysis.html'">📈 Phân tích Doanh thu</li>
+                    <li onclick="window.location.href='/mongo/list'">🗄️ MongoDB Data Viewer</li>
                 </ul>
             </div>
 
             <div class="card">
-                <h2>📋 Quick Actions</h2>
+                <h2>📊 Analysis Tools</h2>
                 <ul class="menu-list">
-                    <li>📥 Export Sales Data</li>
-                    <li>🔄 Refresh Analysis</li>
+                    <li onclick="window.location.href='/revenue-analysis.html'">💰 Revenue Forecasting</li>
+                    <li>🎯 RFM Analysis</li>
+                    <li>📈 Demand Prediction</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>📋 Reports</h2>
+                <ul class="menu-list">
+                    <li>📥 Export Data</li>
                     <li>📊 Generate Report</li>
                     <li>📧 Email Report</li>
-                </ul>
-            </div>
-
-            <div class="card">
-                <h2>🎯 Top Insights</h2>
-                <ul class="menu-list">
-                    <li>🔝 Top 10 Products</li>
-                    <li>🌍 Sales by Country</li>
-                    <li>📅 Monthly Comparison</li>
-                    <li>💎 VIP Customers</li>
                 </ul>
             </div>
         </div>
@@ -238,4 +221,3 @@
     </script>
 </body>
 </html>
-

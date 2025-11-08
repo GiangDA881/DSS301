@@ -5,24 +5,40 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "transactions_raw")
+@Document(collection = "retail_db")
 public class RawTransaction {
     @Id
     private String id;
 
+    @Field("InvoiceNo")
     private String invoiceNo;
+    
+    @Field("StockCode")
     private String stockCode;
+    
+    @Field("Description")
     private String description;
+    
+    @Field("Quantity")
     private String quantity;
+    
+    @Field("InvoiceDate")
     private String invoiceDate;
+    
+    @Field("UnitPrice")
     private String unitPrice;
+    
+    @Field("CustomerID")
     private String customerId;
+    
+    @Field("Country")
     private String country;
 
     private LocalDateTime importedAt;

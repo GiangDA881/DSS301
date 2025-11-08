@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Phân tích Doanh thu theo Danh mục</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F5F5F5;
+            padding: 2rem;
+        }
+        
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        h1 { font-size: 2rem; margin-bottom: 2rem; color: #2a2a2a; }
+        
+        /* Filter */
+        .filter-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .filter-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: #5932EA;
+        }
+        
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .filter-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #EEEEEE;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .btn-analyze {
+            background-color: #5932EA;
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .btn-analyze:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(89, 50, 234, 0.3);
+        }
+        
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .kpi-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .kpi-card h3 {
+            font-size: 0.9rem;
+            color: #9197B3;
+            margin-bottom: 0.5rem;
+        }
+        
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #5932EA;
+        }
+        
+        .growth-positive { color: #00B087; }
+        
+        /* Charts */
+        .chart-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .chart-container h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        canvas { max-height: 350px; }
+        
+        /* Table */
+        .table-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #EEEEEE;
+        }
+        
+        th {
+            background-color: #F5F7FA;
+            font-weight: 600;
+        }
+        
+        .rank-badge {
+            background-color: #5932EA;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .revenue-value { font-weight: 600; color: #00B087; }
+        
+        #results { display: none; }
+        #results.show { display: block; }
+        
+        .loading { text-align: center; padding: 2rem; color: #9197B3; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📊 Phân tích Doanh thu theo Danh mục Sản phẩm</h1>
+
+    <!-- Bộ lọc -->
+    <div class="filter-section">
+        <h2>🔍 Bộ lọc phân tích</h2>
+        <div class="filter-grid">
+            <div class="filter-group">
+                <label>Danh mục</label>
+                <select id="categoryFilter">
+                    <option value="ALL">Tất cả danh mục</option>
+                    <option value="OTHER">OTHER</option>
+                    <option value="Bags">Bags</option>
+                    <option value="Home Decor">Home Decor</option>
+                    <option value="Seasonal">Seasonal</option>
+                    <option value="Gifts">Gifts</option>
+                    <option value="Kitchen">Kitchen</option>
+                    <option value="Party">Party</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Quốc gia</label>
+                <select id="countryFilter">
+                    <option value="ALL">Tất cả quốc gia</option>
+                    <option value="United Kingdom">United Kingdom</option>
+                    <option value="Germany">Germany</option>
+                    <option value="France">France</option>
+                    <option value="EIRE">EIRE (Ireland)</option>
+                    <option value="Spain">Spain</option>
+                    <option value="Netherlands">Netherlands</option>
+                    <option value="Belgium">Belgium</option>
+                    <option value="Switzerland">Switzerland</option>
+                    <option value="Portugal">Portugal</option>
+                    <option value="Australia">Australia</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Số tháng dự đoán</label>
+                <select id="forecastMonths">
+                    <option value="3" selected>3 tháng</option>
+                    <option value="6">6 tháng</option>
+                    <option value="12">12 tháng</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Top N</label>
+                <input type="number" id="topN" value="10" min="1" max="50">
+            </div>
+        </div>
+        
+        <button onclick="analyzeData()" class="btn-analyze">Phân tích</button>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading" class="loading" style="display: none;">
+        Đang xử lý dữ liệu...
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <h3>Tổng Doanh thu</h3>
+                <div class="kpi-value" id="totalRevenue">$0</div>
+            </div>
+            
+            <div class="kpi-card">
+                <h3 id="forecastLabel">Dự đoán 3 tháng tới</h3>
+                <div class="kpi-value" id="forecastRevenue">$0</div>
+            </div>
+            
+            <div class="kpi-card">
+                <h3>Số Danh mục</h3>
+                <div class="kpi-value" id="categoryCount">0</div>
+            </div>
+            
+            <div class="kpi-card">
+                <h3>Danh mục hàng đầu</h3>
+                <div class="kpi-value" style="font-size: 1.5rem;" id="topCategory">-</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="chart-container">
+            <h2>📈 Xu hướng Doanh thu theo Thời gian</h2>
+            <canvas id="trendChart"></canvas>
+        </div>
+        
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h2>📊 So sánh theo Danh mục</h2>
+                <canvas id="categoryChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h2>🥧 Phân bổ Doanh thu</h2>
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-section">
+            <h2>📋 Kết quả Phân tích Chi tiết</h2>
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Danh mục</th>
+                        <th>Tháng</th>
+                        <th>Doanh thu Thực tế</th>
+                        <th>Dự đoán</th>
+                        <th>% Tăng trưởng</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allData = [];
+    let charts = {trend: null, category: null, pie: null};
+    
+    // Tải dữ liệu ban đầu
+    window.onload = function() {
+        loadData();
+    };
+    
+    function loadData() {
+        document.getElementById('loading').style.display = 'block';
+        
+        fetch('/api/dashboard/monthly-category-revenue')
+            .then(response => response.json())
+            .then(data => {
+                allData = data;
+                document.getElementById('loading').style.display = 'none';
+                console.log('Đã tải', data.length, 'records');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('loading').innerHTML = '❌ Lỗi: ' + error.message;
+            });
+    }
+    
+    function analyzeData() {
+        if (allData.length === 0) {
+            alert('Chưa có dữ liệu, vui lòng đợi...');
+            return;
+        }
+        
+        const categoryFilter = document.getElementById('categoryFilter').value;
+        const countryFilter = document.getElementById('countryFilter').value;
+        const forecastMonths = parseInt(document.getElementById('forecastMonths').value);
+        const topN = parseInt(document.getElementById('topN').value);
+        
+        // Lọc dữ liệu
+        let filteredData = allData;
+        if (categoryFilter !== 'ALL') {
+            filteredData = filteredData.filter(d => d.category === categoryFilter);
+        }
+        if (countryFilter !== 'ALL') {
+            filteredData = filteredData.filter(d => d.country === countryFilter);
+        }
+        
+        // Tính KPIs
+        const totalRevenue = filteredData.reduce((sum, item) => sum + item.totalRevenue, 0);
+        const categories = [...new Set(filteredData.map(item => item.category))];
+        const months = [...new Set(filteredData.map(item => item.month))].sort();
+        
+        // Top category
+        const categoryTotals = {};
+        filteredData.forEach(item => {
+            categoryTotals[item.category] = (categoryTotals[item.category] || 0) + item.totalRevenue;
+        });
+        const topCategory = Object.keys(categoryTotals).length > 0 ?
+            Object.keys(categoryTotals).reduce((a, b) => categoryTotals[a] > categoryTotals[b] ? a : b) : 'N/A';
+        
+        // Forecast
+        const avgMonthly = months.length > 0 ? totalRevenue / months.length : 0;
+        const forecastRevenue = avgMonthly * forecastMonths;
+        
+        // Cập nhật KPIs
+        document.getElementById('totalRevenue').textContent = '$' + totalRevenue.toLocaleString('en-US', {maximumFractionDigits: 0});
+        document.getElementById('forecastLabel').textContent = 'Dự đoán ' + forecastMonths + ' tháng tới';
+        document.getElementById('forecastRevenue').textContent = '$' + forecastRevenue.toLocaleString('en-US', {maximumFractionDigits: 0});
+        document.getElementById('categoryCount').textContent = categories.length;
+        document.getElementById('topCategory').textContent = topCategory;
+        
+        // Hiển thị results
+        document.getElementById('results').classList.add('show');
+        
+        // Render charts
+        renderTrendChart(filteredData, categories, months);
+        renderCategoryChart(categoryTotals);
+        renderPieChart(categoryTotals);
+        renderTable(filteredData, topN);
+    }
+    
+    function renderTrendChart(data, categories, months) {
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        
+        // Destroy old chart
+        if (charts.trend) charts.trend.destroy();
+        
+        const colors = ['#5932EA', '#00B087', '#FFA500', '#FF6B6B', '#4ECDC4', '#95E1D3', '#FFD93D'];
+        const datasets = categories.map((category, index) => {
+            const categoryData = months.map(month => {
+                const item = data.find(d => d.category === category && d.month === month);
+                return item ? item.totalRevenue : 0;
+            });
+            
+            return {
+                label: category,
+                data: categoryData,
+                borderColor: colors[index % colors.length],
+                backgroundColor: colors[index % colors.length] + '40',
+                fill: false,
+                tension: 0.1
+            };
+        });
+        
+        charts.trend = new Chart(ctx, {
+            type: 'line',
+            data: { labels: months, datasets: datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => '$' + v.toLocaleString() }
+                    }
+                }
+            }
+        });
+    }
+    
+    function renderCategoryChart(categoryTotals) {
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        if (charts.category) charts.category.destroy();
+        
+        const sortedCategories = Object.entries(categoryTotals)
+            .sort((a, b) => b[1] - a[1]);
+        
+        charts.category = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sortedCategories.map(c => c[0]),
+                datasets: [{
+                    label: 'Doanh thu',
+                    data: sortedCategories.map(c => c[1]),
+                    backgroundColor: '#5932EA'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => '$' + v.toLocaleString() }
+                    }
+                }
+            }
+        });
+    }
+    
+    function renderPieChart(categoryTotals) {
+        const ctx = document.getElementById('pieChart').getContext('2d');
+        if (charts.pie) charts.pie.destroy();
+        
+        const colors = ['#5932EA', '#00B087', '#FFA500', '#FF6B6B', '#4ECDC4', '#95E1D3', '#FFD93D'];
+        
+        charts.pie = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(categoryTotals),
+                datasets: [{
+                    data: Object.values(categoryTotals),
+                    backgroundColor: colors
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+    }
+    
+    function renderTable(data, topN) {
+        const tbody = document.querySelector('#dataTable tbody');
+        tbody.innerHTML = '';
+        
+        // Sort by revenue descending
+        const sorted = [...data].sort((a, b) => b.totalRevenue - a.totalRevenue);
+        const limited = sorted.slice(0, topN * 3); // Top N categories × 3 months
+        
+        limited.forEach((item, index) => {
+            const forecast = item.totalRevenue * 1.1; // Dự đoán = Actual × 1.1
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td><span class="rank-badge">${index + 1}</span></td>
+                <td>${item.category}</td>
+                <td>${item.month}</td>
+                <td class="revenue-value">$${item.totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td class="revenue-value">$${forecast.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td class="growth-positive">10.0%</td>
+            `;
+        });
+    }
+</script>
+
+</body>
+</html>
+

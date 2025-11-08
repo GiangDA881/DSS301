@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Detail</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Navbar */
+        .navbar {
+            background: white;
+            padding: 1.2rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar h2 {
+            color: #5932EA;
+            font-size: 1.5rem;
+        }
+        
+        .navbar .nav-links a {
+            color: #5932EA;
+            text-decoration: none;
+            margin-left: 1.5rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .navbar .nav-links a:hover {
+            color: #764ba2;
+        }
+        
+        /* Header */
+        .page-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+        }
+        
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .page-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card h3 {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        /* Product Info */
+        .product-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .info-item {
+            padding: 1rem;
+            background: #F9FAFB;
+            border-radius: 8px;
+            border-left: 4px solid #5932EA;
+        }
+        
+        .info-item label {
+            font-size: 0.85rem;
+            color: #6B7280;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-item .value {
+            font-size: 1.1rem;
+            color: #1F2937;
+            font-weight: 500;
+        }
+        
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .data-table th {
+            background: #5932EA;
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .data-table td {
+            padding: 0.9rem 1rem;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .data-table tbody tr:hover {
+            background-color: #F9FAFB;
+        }
+        
+        /* Button */
+        .btn-back {
+            background-color: #5932EA;
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        
+        .btn-back:hover {
+            background-color: #4520d4;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(89, 50, 234, 0.3);
+        }
+        
+        .error-message {
+            background: #FEE2E2;
+            color: #991B1B;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            color: #1F2937;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            border-bottom: 2px solid #5932EA;
+            padding-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Navbar -->
+    <div class="navbar">
+        <h2>📊 DSS301 System</h2>
+        <div class="nav-links">
+            <a href="/dashboard-analyst.html">Dashboard</a>
+            <a href="/revenue-analysis.html">Revenue Analysis</a>
+            <a href="/mongo/list">Product List</a>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="page-header">
+        <h1>📦 Product Detail</h1>
+        <p>Chi tiết thông tin sản phẩm</p>
+    </div>
+
+    <!-- Error Message -->
+    <div th:if="${error}" class="card">
+        <div class="error-message" th:text="${error}"></div>
+        <div style="text-align: center; margin-top: 1.5rem;">
+            <a href="/mongo/list" class="btn-back">← Quay lại Product List</a>
+        </div>
+    </div>
+
+    <!-- Product Details -->
+    <div th:unless="${error}">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>📊 Tổng Transactions</h3>
+                <div class="value" th:text="${totalTransactions}">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>📦 Tổng Số Lượng</h3>
+                <div class="value" th:text="${totalQuantity}">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>💰 Tổng Doanh Thu</h3>
+                <div class="value" th:text="'$' + ${#numbers.formatDecimal(totalRevenue, 1, 'COMMA', 2, 'POINT')}">$0</div>
+            </div>
+            <div class="stat-card">
+                <h3>🌍 Số Quốc Gia</h3>
+                <div class="value" th:text="${countryCount}">0</div>
+            </div>
+        </div>
+
+        <!-- Product Information -->
+        <div class="card">
+            <h2 class="section-title">Thông Tin Sản Phẩm</h2>
+            <div class="product-info">
+                <div class="info-item">
+                    <label>Stock Code</label>
+                    <div class="value" th:text="${product.stockCode}">-</div>
+                </div>
+                <div class="info-item">
+                    <label>Description</label>
+                    <div class="value" th:text="${product.description}">-</div>
+                </div>
+                <div class="info-item">
+                    <label>Unit Price</label>
+                    <div class="value" th:text="'$' + ${product.unitPrice}">-</div>
+                </div>
+                <div class="info-item">
+                    <label>Country (First Transaction)</label>
+                    <div class="value" th:text="${product.country}">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="card">
+            <h2 class="section-title">Giao Dịch Gần Đây (Top 10)</h2>
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>Invoice No</th>
+                    <th>Date</th>
+                    <th>Quantity</th>
+                    <th>Country</th>
+                    <th>Customer ID</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="t : ${recentTransactions}">
+                    <td th:text="${t.invoiceNo}">-</td>
+                    <td th:text="${t.invoiceDate}">-</td>
+                    <td th:text="${t.quantity}">-</td>
+                    <td th:text="${t.country}">-</td>
+                    <td th:text="${t.customerId != null ? t.customerId : '-'}">-</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Back Button -->
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="/mongo/list" class="btn-back">← Quay lại Product List</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

@@ -17,7 +17,8 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/admin/jobs")
 @RequiredArgsConstructor
 @Slf4j
-public class DataJobController {
+public class
+DataJobController {
 
     private final DataImportService dataImportService;
     private final DataQualityService dataQualityService;

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Phân tích Doanh thu theo Danh mục</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F5F5F5;
+            padding: 2rem;
+        }
+        
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        h1 { font-size: 2rem; margin-bottom: 2rem; color: #2a2a2a; }
+        
+        /* Filter Section */
+        .filter-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .filter-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: #5932EA;
+        }
+        
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .filter-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #EEEEEE;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .btn-analyze {
+            background-color: #5932EA;
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .btn-analyze:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(89, 50, 234, 0.3);
+        }
+        
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .kpi-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .kpi-card h3 {
+            font-size: 0.9rem;
+            color: #9197B3;
+            margin-bottom: 0.5rem;
+        }
+        
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #5932EA;
+        }
+        
+        .growth-positive { color: #00B087; }
+        
+        /* Table */
+        .table-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #EEEEEE;
+        }
+        
+        th {
+            background-color: #F5F7FA;
+            font-weight: 600;
+            color: #2a2a2a;
+        }
+        
+        .rank-badge {
+            background-color: #5932EA;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .revenue-value {
+            font-weight: 600;
+            color: #00B087;
+        }
+        
+        .result-section {
+            display: none;
+        }
+        
+        .result-section.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📊 Phân tích Doanh thu theo Danh mục Sản phẩm</h1>
+
+    <!-- Bộ lọc phân tích -->
+    <div class="filter-section">
+        <h2>🔍 Bộ lọc phân tích</h2>
+        <form th:action="@{/dashboard/revenue-forecast/analyze}" method="post">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label>Danh mục</label>
+                    <select name="category">
+                        <option value="ALL">Tất cả danh mục</option>
+                        <option value="OTHER">OTHER</option>
+                        <option value="Bags">Bags</option>
+                        <option value="Home Decor">Home Decor</option>
+                        <option value="Seasonal">Seasonal</option>
+                        <option value="Gifts">Gifts</option>
+                        <option value="Kitchen">Kitchen</option>
+                        <option value="Party">Party</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Quốc gia</label>
+                    <select name="country">
+                        <option value="ALL">Tất cả quốc gia</option>
+                        <option value="United Kingdom">United Kingdom</option>
+                        <option value="Germany">Germany</option>
+                        <option value="France">France</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Số tháng dự đoán</label>
+                    <select name="forecastMonths">
+                        <option value="3" selected>3 tháng</option>
+                        <option value="6">6 tháng</option>
+                        <option value="12">12 tháng</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Top N</label>
+                    <input type="number" name="topN" value="10" min="1" max="50">
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-analyze">Phân tích</button>
+        </form>
+    </div>
+
+    <!-- Results Section -->
+    <div class="result-section" th:classappend="${totalRevenue != null ? 'show' : ''}" th:if="${totalRevenue != null}">
+        
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <h3>Tổng Doanh thu</h3>
+                <div class="kpi-value" th:text="'$' + ${#numbers.formatDecimal(totalRevenue, 1, 'COMMA', 0, 'POINT')}">$0</div>
+            </div>
+            
+            <div class="kpi-card">
+                <h3 th:text="'Dự đoán ' + ${selectedForecastMonths} + ' tháng tới'">Dự đoán 3 tháng tới</h3>
+                <div class="kpi-value" th:text="'$' + ${#numbers.formatDecimal(forecastRevenue, 1, 'COMMA', 0, 'POINT')}">$0</div>
+            </div>
+            
+            <div class="kpi-card">
+                <h3>% Tăng trưởng dự kiến</h3>
+                <div class="kpi-value growth-positive" th:text="${#numbers.formatDecimal(growthRate, 1, 1)} + '%'">0%</div>
+            </div>
+            
+            <div class="kpi-card">
+                <h3>Danh mục hàng đầu</h3>
+                <div class="kpi-value" style="font-size: 1.5rem;" th:text="${topCategory}">N/A</div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-section">
+            <h2>📋 Kết quả Phân tích Chi tiết</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Danh mục</th>
+                        <th>Tháng</th>
+                        <th>Doanh thu Thực tế</th>
+                        <th>Dự đoán</th>
+                        <th>% Tăng trưởng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="item, iterStat : ${dataList}">
+                        <td><span class="rank-badge" th:text="${iterStat.index + 1}">1</span></td>
+                        <td th:text="${item.category}">Category</td>
+                        <td th:text="${item.month}">2011-12</td>
+                        <td class="revenue-value" th:text="'$' + ${#numbers.formatDecimal(item.totalRevenue, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                        <td class="revenue-value" th:text="'$' + ${#numbers.formatDecimal(item.totalRevenue * 1.1, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                        <td class="growth-positive">10.0%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+
